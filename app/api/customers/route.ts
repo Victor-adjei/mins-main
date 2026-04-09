@@ -12,7 +12,7 @@ export const GET = auth(async (req) => {
     const res = await query(`
       SELECT c.*, ct.customer_type_name
       FROM customers c
-      LEFT JOIN customers_type ct ON c.customer_number = ct.customer_type_number
+      LEFT JOIN customers_type ct ON c.customer_type_number = ct.customer_type_number
       ORDER BY c.registration_date DESC
     `);
     

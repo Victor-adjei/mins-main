@@ -168,7 +168,7 @@ export default function TransactionsPage() {
                 <label className="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-3">Amount (GHS)</label>
                 <div className="relative">
                    <div className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-400">GH₵</div>
-                   <input 
+                   <input spellCheck={false} 
                      type="number" 
                      step="0.01"
                      value={amount}

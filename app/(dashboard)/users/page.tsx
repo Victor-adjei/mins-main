@@ -121,7 +121,7 @@ export default function UsersPage() {
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div>
                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Username</label>
-                <input 
+                <input spellCheck={false} 
                   type="text" 
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -132,7 +132,7 @@ export default function UsersPage() {
 
               <div>
                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Email Address</label>
-                <input 
+                <input spellCheck={false} 
                   type="email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -145,7 +145,7 @@ export default function UsersPage() {
                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Temporary Password</label>
                 <div className="relative">
                    <Lock className="w-4 h-4 absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" />
-                   <input 
+                   <input spellCheck={false} 
                      type="password" 
                      value={password}
                      onChange={(e) => setPassword(e.target.value)}
@@ -193,7 +193,7 @@ export default function UsersPage() {
                </h3>
                <div className="relative w-64">
                  <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                 <input 
+                 <input spellCheck={false} 
                     type="text" 
                     placeholder="Quick search..." 
                     value={searchTerm}

@@ -68,7 +68,7 @@ export default function LoginPage() {
               <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Username
               </label>
-              <input
+              <input spellCheck={false}
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -82,7 +82,7 @@ export default function LoginPage() {
               <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Password
               </label>
-              <input
+              <input spellCheck={false}
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

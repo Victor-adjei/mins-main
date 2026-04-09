@@ -31,6 +31,7 @@ interface Customer {
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -41,9 +42,15 @@ export default function CustomersPage() {
     try {
       const res = await fetch('/api/customers');
       const data = await res.json();
-      setCustomers(data);
-    } catch (error) {
-      console.error('Error fetching customers:', error);
+      if (!res.ok || data.error) {
+        setError(data.error || 'Failed to load customers.');
+        setCustomers([]);
+      } else {
+        setCustomers(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Error fetching customers:', err);
+      setError('Network error — could not reach the server.');
     } finally {
       setLoading(false);
     }
@@ -59,6 +66,24 @@ export default function CustomersPage() {
     return (
       <div className="h-full flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center gap-3 text-center px-4">
+        <div className="w-16 h-16 bg-rose-50 rounded-3xl flex items-center justify-center">
+          <span className="text-3xl">⚠️</span>
+        </div>
+        <h2 className="text-lg font-bold text-slate-900">Could not load customers</h2>
+        <p className="text-slate-500 text-sm max-w-xs">{error}</p>
+        <button
+          onClick={() => { setError(null); setLoading(true); fetchCustomers(); }}
+          className="mt-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all"
+        >
+          Retry
+        </button>
       </div>
     );
   }
@@ -93,7 +118,7 @@ export default function CustomersPage() {
         <div className="p-6 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input 
+            <input spellCheck={false} 
               type="text" 
               placeholder="Search by name, phone or ID..." 
               value={searchTerm}
@@ -134,7 +159,7 @@ export default function CustomersPage() {
                           />
                         ) : (
                           <div className="flex items-center justify-center h-full text-slate-400 font-bold text-lg uppercase bg-emerald-50 text-emerald-600">
-                            {customer.first_name[0]}{customer.surname[0]}
+                            {customer.first_name?.[0] ?? '?'}{customer.surname?.[0] ?? ''}
                           </div>
                         )}
                       </div>

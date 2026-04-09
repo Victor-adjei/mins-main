@@ -87,7 +87,7 @@ export default function AccountStatusPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-3">Status Name</label>
-                <input 
+                <input spellCheck={false} 
                   type="text" 
                   value={name}
                   onChange={(e) => setName(e.target.value)}

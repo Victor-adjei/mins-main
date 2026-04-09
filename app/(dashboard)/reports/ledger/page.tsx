@@ -80,7 +80,7 @@ export default function LedgerPage() {
                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Start Date</label>
                 <div className="relative group">
                   <Calendar className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                  <input 
+                  <input spellCheck={false} 
                     type="date" 
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
@@ -92,7 +92,7 @@ export default function LedgerPage() {
                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 px-1">End Date</label>
                 <div className="relative group">
                   <Calendar className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                  <input 
+                  <input spellCheck={false} 
                     type="date" 
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}

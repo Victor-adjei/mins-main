@@ -74,7 +74,7 @@ export default function AccountsPage() {
         <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4 text-center">
           <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input 
+            <input spellCheck={false} 
               type="text" 
               placeholder="Search accounts by name or ID..." 
               value={searchTerm}
