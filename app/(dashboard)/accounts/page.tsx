@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  CreditCard, 
-  Search, 
-  Plus, 
+import {
+  CreditCard,
+  Search,
+  Plus,
   Loader2,
   Filter,
   User,
@@ -49,7 +49,7 @@ export default function AccountsPage() {
     }
   }
 
-  const filteredAccounts = accounts.filter(a => 
+  const filteredAccounts = accounts.filter(a =>
     `${a.first_name} ${a.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     a.account_number.toString().includes(searchTerm)
   );
@@ -79,23 +79,23 @@ export default function AccountsPage() {
         <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4 text-center">
           <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input spellCheck={false} 
-              type="text" 
-              placeholder="Search accounts by name or ID..." 
+            <input spellCheck={false}
+              type="text"
+              placeholder="Search accounts by name or ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 rounded-2xl text-sm transition-all outline-none" 
+              className="w-full pl-11 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 rounded-2xl text-sm transition-all outline-none"
             />
           </div>
           <div className="flex items-center space-x-3">
-             <div className="flex bg-slate-50 rounded-xl p-1">
-               <button className="px-4 py-1.5 text-xs font-bold text-slate-600 bg-white rounded-lg shadow-sm">All</button>
-               <button className="px-4 py-1.5 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors">Active</button>
-               <button className="px-4 py-1.5 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors">Closed</button>
-             </div>
-             <button className="p-2.5 bg-slate-50 text-slate-500 rounded-xl hover:bg-slate-100 transition-colors">
-               <Filter className="w-5 h-5" />
-             </button>
+            <div className="flex bg-slate-50 rounded-xl p-1">
+              <button className="px-4 py-1.5 text-xs font-bold text-slate-600 bg-white rounded-lg shadow-sm">All</button>
+              <button className="px-4 py-1.5 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors">Active</button>
+              <button className="px-4 py-1.5 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors">Closed</button>
+            </div>
+            <button className="p-2.5 bg-slate-50 text-slate-500 rounded-xl hover:bg-slate-100 transition-colors">
+              <Filter className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
@@ -162,7 +162,7 @@ export default function AccountsPage() {
               ))}
             </tbody>
           </table>
-          
+
           {filteredAccounts.length === 0 && (
             <div className="flex flex-col items-center justify-center py-24 text-center">
               <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6">
@@ -175,12 +175,12 @@ export default function AccountsPage() {
         </div>
 
         <div className="p-8 border-t border-slate-50 bg-slate-50/30 flex items-center justify-between">
-           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-             End of account records
-           </p>
-           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-             Total Records: {accounts.length}
-           </p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            End of account records
+          </p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            Total Records: {accounts.length}
+          </p>
         </div>
       </div>
     </div>
