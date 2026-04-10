@@ -9,9 +9,9 @@ async function describeTable() {
     const res = await pool.query(`
       SELECT column_name, data_type 
       FROM information_schema.columns 
-      WHERE table_name = 'customer_type'
+      WHERE table_name = 'account_status'
     `);
-    console.log(res.rows);
+    console.log(JSON.stringify(res.rows, null, 2));
   } catch(e) {
     console.error('ERROR:', e.message);
   } finally {

@@ -7,9 +7,9 @@ const globalForPool = global as unknown as { pool: Pool };
 const pool = globalForPool.pool || new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
-  max: 20, // Increased max connections for concurrent API calls
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  max: 20, 
+  idleTimeoutMillis: 60000,
+  connectionTimeoutMillis: 30000,
 });
 
 if (process.env.NODE_ENV !== 'production') globalForPool.pool = pool;

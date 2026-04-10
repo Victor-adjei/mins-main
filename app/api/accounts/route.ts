@@ -29,15 +29,20 @@ export const POST = auth(async (req) => {
   try {
     const { customer_id, account_type_id, account_status_id, initial_balance } = await req.json();
     
+    // Auto-generate a 10-digit account number
+    // We use a high range to ensure 10 digits and minimize collision probability
+    const account_number = Math.floor(1000000000 + Math.random() * 9000000000).toString();
+
     const res = await query(`
-      INSERT INTO accounts (customer, account_type, account_status, balance)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO accounts (account_number, customer, account_type, account_status, balance)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING *
-    `, [customer_id, account_type_id, account_status_id, initial_balance || 0]);
+    `, [account_number, customer_id, account_type_id, account_status_id, initial_balance || 0]);
     
     return NextResponse.json(res.rows[0]);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Account Create Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    // Handle unique constraint violation if necessary (statistically rare with 10 digits)
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 });

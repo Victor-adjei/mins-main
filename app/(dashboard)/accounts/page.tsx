@@ -12,6 +12,7 @@ import {
   MoreVertical,
   Activity
 } from 'lucide-react';
+import Link from 'next/link';
 
 interface Account {
   account_number: number;
@@ -69,10 +70,10 @@ export default function AccountsPage() {
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Accounts</h1>
           <p className="text-slate-500 font-medium mt-1">Manage member savings and credit accounts.</p>
         </div>
-        <button className="flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all active:scale-95 shadow-lg shadow-emerald-500/20">
+        <Link href="/accounts/new" className="flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all active:scale-95 shadow-lg shadow-emerald-500/20">
           <Plus className="w-5 h-5" />
           <span>Open Account</span>
-        </button>
+        </Link>
       </div>
 
       <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden min-h-[500px]">

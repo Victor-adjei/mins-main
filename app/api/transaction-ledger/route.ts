@@ -15,11 +15,44 @@ export const GET = auth(async (req) => {
       FROM transactions t
       JOIN accounts a ON t.account_number = a.account_number
       JOIN customers c ON a.customer = c.customer_number
-      WHERE CAST(t.transaction_date AS DATE) BETWEEN $1 AND $2
+      WHERE t.transaction_date::DATE BETWEEN $1 AND $2
       ORDER BY t.transaction_date DESC
     `, [startDate, endDate]);
+
+    const transactions = res.rows;
+
+    // Calculate Summary Stats
+    const totalDeposits = transactions
+      .filter((t: any) => t.transaction_type === 'Deposit')
+      .reduce((sum: number, t: any) => sum + parseFloat(t.amount || 0), 0);
     
-    return NextResponse.json(res.rows);
+    const totalWithdrawals = transactions
+      .filter((t: any) => t.transaction_type === 'Withdrawal')
+      .reduce((sum: number, t: any) => sum + parseFloat(t.amount || 0), 0);
+
+    // Group by Day for Chart
+    const chartMap = new Map();
+    transactions.forEach((t: any) => {
+      const date = new Date(t.transaction_date).toISOString().split('T')[0];
+      if (!chartMap.has(date)) {
+        chartMap.set(date, { date, deposits: 0, withdrawals: 0 });
+      }
+      const entry = chartMap.get(date);
+      if (t.transaction_type === 'Deposit') entry.deposits += parseFloat(t.amount || 0);
+      else entry.withdrawals += parseFloat(t.amount || 0);
+    });
+
+    const chartData = Array.from(chartMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+    
+    return NextResponse.json({
+      transactions,
+      summary: {
+        totalDeposits,
+        totalWithdrawals,
+        netCashFlow: totalDeposits - totalWithdrawals
+      },
+      chartData
+    });
   } catch (error) {
     console.error('Ledger API Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

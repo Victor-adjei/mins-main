@@ -4,14 +4,14 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-async function checkRows() {
+async function seed() {
   try {
-    const res = await pool.query('SELECT * FROM customers LIMIT 2');
-    console.log(res.rows);
+    await pool.query("INSERT INTO account_status (account_status_name) VALUES ('Active'), ('Closed'), ('Suspended')");
+    console.log('Seeded account_status table');
   } catch(e) {
-    console.error('ERROR:', e.message);
+    console.error('Seed failed:', e.message);
   } finally {
     pool.end();
   }
 }
-checkRows();
+seed();

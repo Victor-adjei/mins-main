@@ -11,8 +11,27 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  TrendingDown,
+  TrendingUp,
+  Wallet
 } from 'lucide-react';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  Cell
+} from 'recharts';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 interface Transaction {
   transaction_id: number;
@@ -25,10 +44,32 @@ interface Transaction {
   surname: string;
 }
 
+interface SummaryStats {
+  totalDeposits: number;
+  totalWithdrawals: number;
+  netCashFlow: number;
+}
+
+interface ChartData {
+  date: string;
+  deposits: number;
+  withdrawals: number;
+}
+
 export default function LedgerPage() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [data, setData] = useState<{
+    transactions: Transaction[];
+    summary: SummaryStats;
+    chartData: ChartData[];
+  } | null>(null);
+
+  // Default to current month range
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+
+  const [startDate, setStartDate] = useState(firstDay);
+  const [endDate, setEndDate] = useState(lastDay);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,8 +80,8 @@ export default function LedgerPage() {
     setLoading(true);
     try {
       const res = await fetch(`/api/transaction-ledger?start_date=${startDate}&end_date=${endDate}`);
-      const data = await res.json();
-      setTransactions(data);
+      const json = await res.json();
+      setData(json);
     } catch (error) {
       console.error('Error fetching ledger:', error);
     } finally {
@@ -55,153 +96,250 @@ export default function LedgerPage() {
     }).format(typeof amount === 'string' ? parseFloat(amount) : amount);
   };
 
+  if (loading && !data) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Transaction Ledger</h1>
-          <p className="text-slate-500 font-medium mt-1">Detailed audit trail of all financial movements.</p>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tighter">Transaction Ledger</h1>
+          <p className="text-slate-500 font-medium mt-1">Detailed audit trail and cash flow analysis.</p>
         </div>
         <a 
           href={`/api/pdf/ledger?start_date=${startDate}&end_date=${endDate}`}
           target="_blank"
-          className="flex items-center space-x-2 px-5 py-2.5 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-all active:scale-95 shadow-lg shadow-rose-500/20"
+          className="flex items-center space-x-2 px-6 py-3 bg-rose-600 text-white rounded-2xl font-black hover:bg-rose-700 transition-all active:scale-95 shadow-xl shadow-rose-500/20"
         >
           <FileDown className="w-5 h-5" />
-          <span>Download PDF</span>
+          <span>Print Report</span>
         </a>
       </div>
 
-      <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden min-h-[500px]">
-        <div className="p-8 border-b border-slate-50 bg-slate-50/[0.03]">
-          <div className="flex flex-col lg:flex-row lg:items-end gap-6">
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Start Date</label>
-                <div className="relative group">
-                  <Calendar className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                  <input spellCheck={false} 
-                    type="date" 
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 rounded-2xl text-sm font-bold transition-all outline-none shadow-sm"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 px-1">End Date</label>
-                <div className="relative group">
-                  <Calendar className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                  <input spellCheck={false} 
-                    type="date" 
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 rounded-2xl text-sm font-bold transition-all outline-none shadow-sm"
-                  />
-                </div>
-              </div>
+      {/* Filter Bar */}
+      <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col lg:flex-row lg:items-end gap-6">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Reporting From</label>
+            <div className="relative group">
+              <Calendar className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+              <input 
+                type="date" 
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-none focus:ring-2 focus:ring-emerald-500/20 rounded-2xl text-sm font-bold outline-none transition-all"
+              />
             </div>
-            <button 
-              onClick={fetchLedger}
-              className="px-8 py-3.5 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-slate-800 transition-all active:scale-95 shadow-xl shadow-slate-200 flex items-center justify-center space-x-2"
-            >
-              <Filter className="w-4 h-4" />
-              <span>Apply Filter</span>
-            </button>
           </div>
+          <div className="space-y-2">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Reporting To</label>
+            <div className="relative group">
+              <Calendar className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+              <input 
+                type="date" 
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-none focus:ring-2 focus:ring-emerald-500/20 rounded-2xl text-sm font-bold outline-none transition-all"
+              />
+            </div>
+          </div>
+        </div>
+        <button 
+          onClick={fetchLedger}
+          disabled={loading}
+          className="px-10 py-3.5 bg-slate-900 text-white rounded-2xl font-black text-sm hover:bg-slate-800 transition-all active:scale-95 shadow-xl shadow-slate-200 flex items-center justify-center space-x-2 disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Filter className="w-4 h-4" />}
+          <span>Refresh Ledger</span>
+        </button>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-emerald-500 p-8 rounded-[2.5rem] text-white shadow-xl shadow-emerald-500/20 relative overflow-hidden group">
+          <div className="relative z-10">
+            <div className="flex items-center space-x-2 opacity-80">
+              <TrendingUp className="w-4 h-4" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Total Deposits</span>
+            </div>
+            <h2 className="text-3xl font-black mt-3 flex items-baseline">
+              <span className="text-lg mr-1 opacity-70">GHS</span>
+              {data?.summary.totalDeposits.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </h2>
+          </div>
+          <ArrowDownLeft className="absolute -right-4 -bottom-4 w-24 h-24 opacity-10 group-hover:scale-110 transition-transform duration-700" />
+        </div>
+
+        <div className="bg-rose-500 p-8 rounded-[2.5rem] text-white shadow-xl shadow-rose-500/20 relative overflow-hidden group">
+          <div className="relative z-10">
+            <div className="flex items-center space-x-2 opacity-80">
+              <TrendingDown className="w-4 h-4" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Total Withdrawals</span>
+            </div>
+            <h2 className="text-3xl font-black mt-3 flex items-baseline">
+              <span className="text-lg mr-1 opacity-70">GHS</span>
+              {data?.summary.totalWithdrawals.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </h2>
+          </div>
+          <ArrowUpRight className="absolute -right-4 -bottom-4 w-24 h-24 opacity-10 group-hover:scale-110 transition-transform duration-700" />
+        </div>
+
+        <div className="bg-indigo-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden group">
+          <div className="relative z-10">
+            <div className="flex items-center space-x-2 opacity-80">
+              <Wallet className="w-4 h-4" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Net Cash Flow</span>
+            </div>
+            <h2 className="text-3xl font-black mt-3 flex items-baseline">
+              <span className="text-lg mr-1 opacity-70">GHS</span>
+              {data?.summary.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </h2>
+          </div>
+          <History className="absolute -right-4 -bottom-4 w-24 h-24 opacity-10 group-hover:scale-110 transition-transform duration-700" />
+        </div>
+      </div>
+
+      {/* Chart Section */}
+      <div className="bg-white p-10 rounded-[2.5rem] border border-slate-50 shadow-sm">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h3 className="text-lg font-black text-slate-900 tracking-tight flex items-center">
+              <TrendingUp className="w-5 h-5 mr-3 text-emerald-500" />
+              Daily Trend
+            </h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Transaction volume by date</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-emerald-500 rounded-full" />
+              <span className="text-[10px] font-black text-slate-400 uppercase">Deposits</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-rose-500 rounded-full" />
+              <span className="text-[10px] font-black text-slate-400 uppercase">Withdrawals</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="h-[300px] w-full">
+          {data && data.chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.chartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="date" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
+                  tickFormatter={(val) => new Date(val).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
+                  tickFormatter={(val) => `₵${val}`}
+                />
+                <Tooltip 
+                  cursor={{ fill: '#f8fafc' }}
+                  contentStyle={{ 
+                    borderRadius: '1rem', 
+                    border: 'none', 
+                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                    fontWeight: 700,
+                    fontSize: '12px'
+                  }}
+                />
+                <Bar dataKey="deposits" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+                <Bar dataKey="withdrawals" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={20} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-slate-300">
+              <TrendingUp className="w-12 h-12 mb-2 opacity-20" />
+              <p className="text-sm font-bold opacity-50 uppercase tracking-widest">No chart data available</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Detailed Ledger Table */}
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+        <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+          <h3 className="text-xl font-black text-slate-900 tracking-tight">Movement Details</h3>
+          <span className="bg-slate-50 text-slate-400 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
+            {data?.transactions.length || 0} Transactions Found
+          </span>
         </div>
 
         <div className="overflow-x-auto">
-          {loading ? (
-            <div className="py-24 flex flex-col items-center justify-center">
-              <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
-              <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mt-4">Generating Ledger...</p>
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="px-8 py-5 border-b border-slate-50">Timestamp</th>
+                <th className="px-8 py-5 border-b border-slate-50">Member / Account</th>
+                <th className="px-8 py-5 border-b border-slate-50 text-right">Flow</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {data?.transactions.map((t) => (
+                <tr key={t.transaction_id} className="hover:bg-slate-50/30 transition-colors group">
+                  <td className="px-8 py-5">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-black text-slate-900 leading-none mb-1.5">
+                        {new Date(t.transaction_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                        {new Date(t.transaction_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-5">
+                    <div className="flex flex-col">
+                      <p className="text-sm font-bold text-slate-900 leading-none mb-1.5">{t.first_name} {t.surname}</p>
+                      <p className="text-[10px] text-emerald-600 font-black uppercase tracking-tighter flex items-center">
+                        <Wallet className="w-3 h-3 mr-1" />
+                        Acc: #{t.account_number}
+                      </p>
+                    </div>
+                  </td>
+                  <td className="px-8 py-5 text-right">
+                    <div className="flex flex-col items-end">
+                      <span className={cn(
+                        "text-lg font-black tracking-tight",
+                        t.transaction_type === 'Deposit' ? "text-emerald-600" : "text-rose-600"
+                      )}>
+                        {t.transaction_type === 'Deposit' ? '+' : '-'} {formatCurrency(t.amount)}
+                      </span>
+                      <span className={cn(
+                        "text-[9px] font-black uppercase tracking-widest mt-1 px-3 py-1 rounded-full",
+                        t.transaction_type === 'Deposit' ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+                      )}>
+                        {t.transaction_type}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {data?.transactions.length === 0 && (
+            <div className="py-24 flex flex-col items-center justify-center text-center px-8">
+              <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6">
+                <History className="w-10 h-10 text-slate-200" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900">Empty Ledger</h3>
+              <p className="text-slate-400 text-sm max-w-xs mt-2 font-medium">No transactions were found within the selected date range.</p>
             </div>
-          ) : (
-            <>
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/50">
-                    <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-50">Timestamp</th>
-                    <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-50">Member / Account</th>
-                    <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-50">Description</th>
-                    <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 text-right">Flow</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {transactions.map((t) => (
-                    <tr key={t.transaction_id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-8 py-5">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-black text-slate-900 leading-none mb-1.5">
-                            {new Date(t.transaction_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                            {new Date(t.transaction_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-8 py-5">
-                        <div className="flex flex-col">
-                          <p className="text-sm font-bold text-slate-900 leading-none mb-1.5">{t.first_name} {t.surname}</p>
-                          <p className="text-[10px] text-emerald-600 font-black uppercase tracking-tighter">Acc: #{t.account_number}</p>
-                        </div>
-                      </td>
-                      <td className="px-8 py-5">
-                        <p className="text-xs text-slate-500 font-medium italic">{t.description || 'No description provided'}</p>
-                      </td>
-                      <td className="px-8 py-5 text-right">
-                        <div className="flex flex-col items-end">
-                           <span className={cn(
-                             "text-lg font-black tracking-tight flex items-center",
-                             t.transaction_type === 'Deposit' ? "text-emerald-600" : "text-rose-600"
-                           )}>
-                             {t.transaction_type === 'Deposit' ? '+' : '-'} {formatCurrency(t.amount)}
-                           </span>
-                           <span className={cn(
-                             "text-[9px] font-black uppercase tracking-widest mt-1 px-2 py-0.5 rounded-lg",
-                             t.transaction_type === 'Deposit' ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
-                           )}>
-                             {t.transaction_type}
-                           </span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {transactions.length === 0 && (
-                <div className="py-24 flex flex-col items-center justify-center text-center px-8">
-                  <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6">
-                    <History className="w-10 h-10 text-slate-200" />
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-900 underline decoration-slate-200 decoration-2 underline-offset-4">Empty Ledger</h3>
-                  <p className="text-slate-400 text-sm max-w-xs mt-2 font-medium">No transactions were found within the selected date range. Try adjusting your filter.</p>
-                </div>
-              )}
-            </>
           )}
-        </div>
-
-        <div className="p-8 border-t border-slate-50 bg-slate-50/10 flex items-center justify-between">
-           <div className="flex items-center space-x-4">
-             <button className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-95 disabled:opacity-20">
-               <ChevronLeft className="w-5 h-5" />
-             </button>
-             <button className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-95 disabled:opacity-20">
-               <ChevronRight className="w-5 h-5" />
-             </button>
-           </div>
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">
-             Accounting period: {new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}
-           </p>
         </div>
       </div>
     </div>
   );
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
 }
