@@ -36,6 +36,10 @@ input[type="url"],
 select,
 textarea {
   color: #0f172a; /* text-slate-900 */
+  background-color: #ffffff; /* Explicit white background */
+  border: 1px solid #94a3b8; /* Explicit border so edges are clear */
+  border-radius: 0.375rem; /* rounded-md */
+  padding: 0.5rem 0.75rem; /* px-3 py-2 */
   font-weight: 500;
 }
 
