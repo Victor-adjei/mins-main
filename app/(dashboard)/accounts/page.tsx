@@ -22,12 +22,15 @@ import {
 import Link from 'next/link';
 
 interface Account {
-  account_number: number | string;
+  account_number: string;
   first_name: string;
   surname: string;
   customer_number: string;
   account_type_name: string;
+  account_type: number | string;
+  customer_type_name?: string;
   account_status_name: string;
+  account_status?: number;
   balance: string | number;
   created_at: string;
   mobile_banker?: string;
@@ -53,7 +56,18 @@ export default function AccountsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
+
+  // Manage State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+
+  // Generated Account Number
+  const [generatedAccountNumber, setGeneratedAccountNumber] = useState('');
+
+  useEffect(() => {
+    setGeneratedAccountNumber(Math.floor(1000000000 + Math.random() * 9000000000).toString());
+  }, [activeTab === 'create' && !editingAccount]);
+
   // Create Form State
   const [searchCustomer, setSearchCustomer] = useState('');
   const [showCustomerList, setShowCustomerList] = useState(false);
@@ -61,16 +75,9 @@ export default function AccountsPage() {
   const [formData, setFormData] = useState({
     account_type: '',
     initial_balance: '',
-    mobile_banker: ''
+    mobile_banker: '',
+    account_status: 1
   });
-
-  // Manage State
-  const [searchTerm, setSearchTerm] = useState('');
-
-  // Generated Account Number
-  const generatedAccountNumber = useMemo(() => {
-    return Math.floor(1000000000 + Math.random() * 9000000000).toString();
-  }, [activeTab === 'create']);
 
   useEffect(() => {
     fetchData();
@@ -104,7 +111,7 @@ export default function AccountsPage() {
 
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCustomer) {
+    if (!selectedCustomer && !editingAccount) {
       setError('Please select a customer.');
       return;
     }
@@ -116,28 +123,33 @@ export default function AccountsPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch('/api/accounts', {
-        method: 'POST',
+      const method = editingAccount ? 'PUT' : 'POST';
+      const url = editingAccount ? `/api/accounts/${editingAccount.account_number}` : '/api/accounts';
+
+      const payload = {
+        customer_number: selectedCustomer?.customer_number || editingAccount?.customer_number,
+        account_type: formData.account_type,
+        initial_balance: parseFloat(formData.initial_balance) || 0,
+        mobile_banker: formData.mobile_banker,
+        account_status: formData.account_status,
+        account_number: editingAccount ? editingAccount.account_number : generatedAccountNumber
+      };
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customer_number: selectedCustomer.customer_number,
-          account_type: formData.account_type,
-          initial_balance: parseFloat(formData.initial_balance) || 0,
-          mobile_banker: formData.mobile_banker,
-          account_number: generatedAccountNumber
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
-        setSuccess('Account successfully opened!');
-        setFormData({ account_type: '', initial_balance: '', mobile_banker: '' });
-        setSelectedCustomer(null);
-        setSearchCustomer('');
+        setSuccess(editingAccount ? 'Account successfully updated!' : 'Account successfully opened!');
+        resetForm();
         fetchData();
         setTimeout(() => setSuccess(null), 3000);
+        if (editingAccount) setActiveTab('manage');
       } else {
         const data = await res.json();
-        setError(data.error || 'Failed to open account.');
+        setError(data.error || 'Failed to process account.');
       }
     } catch (err) {
       setError('Network error.');
@@ -146,7 +158,53 @@ export default function AccountsPage() {
     }
   };
 
-  const filteredCustomers = customers.filter(c => 
+  const resetForm = () => {
+    setFormData({ account_type: '', initial_balance: '', mobile_banker: '', account_status: 1 });
+    setSelectedCustomer(null);
+    setSearchCustomer('');
+    setEditingAccount(null);
+    setGeneratedAccountNumber(Math.floor(1000000000 + Math.random() * 9000000000).toString());
+  };
+
+  const handleEdit = (account: Account) => {
+    setEditingAccount(account);
+    setFormData({
+      account_type: account.account_type.toString(),
+      initial_balance: account.balance.toString(),
+      mobile_banker: account.mobile_banker || '',
+      account_status: account.account_status || 1
+    });
+    setSelectedCustomer({
+      customer_number: account.customer_number,
+      first_name: account.first_name,
+      surname: account.surname
+    });
+    setActiveTab('create');
+  };
+
+  const handleDelete = async (accountNumber: string | number) => {
+    if (!confirm('Are you sure you want to delete this account?')) return;
+
+    try {
+      const res = await fetch(`/api/accounts/${accountNumber}`, { method: 'DELETE' });
+      if (res.ok) {
+        setSuccess('Account deleted successfully');
+        fetchData();
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to delete account');
+      }
+    } catch (err) {
+      alert('Network error');
+    }
+  };
+
+  const handlePrintSingle = (account: Account) => {
+    window.print();
+  };
+
+  const filteredCustomers = customers.filter(c =>
     `${c.first_name} ${c.surname}`.toLowerCase().includes(searchCustomer.toLowerCase()) ||
     c.customer_number.toString().includes(searchCustomer)
   );
@@ -168,7 +226,7 @@ export default function AccountsPage() {
       a.mobile_banker || 'N/A'
     ]);
 
-    const csvContent = "data:text/csv;charset=utf-8," 
+    const csvContent = "data:text/csv;charset=utf-8,"
       + headers.join(",") + "\n"
       + rows.map(e => e.join(",")).join("\n");
 
@@ -184,36 +242,34 @@ export default function AccountsPage() {
   return (
     <div className="bg-[#f8fafc] min-h-screen">
       {/* Tabs Header */}
-      <div className="bg-slate-800 text-white flex border-b border-slate-700">
-        <button 
-          onClick={() => setActiveTab('create')}
+      {/* Tabs Header */}
+      <div className="bg-white flex border-b border-slate-200 px-8 pt-8 pb-4 space-x-12">
+        <button
+          onClick={() => { setActiveTab('create'); resetForm(); }}
           className={cn(
-            "flex items-center space-x-2 px-8 py-4 text-xs font-black uppercase tracking-widest transition-all",
-            activeTab === 'create' ? "bg-[#00c58d] text-white" : "hover:bg-slate-700 text-slate-400"
+            "text-base font-medium transition-all relative pb-2",
+            activeTab === 'create' ? "text-black after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-red-500" : "text-slate-900 hover:text-red-500"
           )}
         >
-          <CreditCard className="w-4 h-4" />
-          <span>Create new account</span>
+          Create New Account
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('manage')}
           className={cn(
-            "flex items-center space-x-2 px-8 py-4 text-xs font-black uppercase tracking-widest transition-all",
-            activeTab === 'manage' ? "bg-[#0066cc] text-white" : "hover:bg-slate-700 text-slate-400"
+            "text-base font-medium transition-all relative pb-2",
+            activeTab === 'manage' ? "text-black after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-red-500" : "text-slate-900 hover:text-red-500"
           )}
         >
-          <LayoutGrid className="w-4 h-4" />
-          <span>Manage account</span>
+          Manage Account
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('print')}
           className={cn(
-            "flex items-center space-x-2 px-8 py-4 text-xs font-black uppercase tracking-widest transition-all",
-            activeTab === 'print' ? "bg-[#0b1424] text-white" : "hover:bg-slate-700 text-slate-400"
+            "text-base font-medium transition-all relative pb-2",
+            activeTab === 'print' ? "text-black after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-red-500" : "text-slate-900 hover:text-red-500"
           )}
         >
-          <Printer className="w-4 h-4" />
-          <span>Print all account</span>
+          Print all accounts
         </button>
       </div>
 
@@ -222,13 +278,15 @@ export default function AccountsPage() {
           <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Banner */}
             <div className="bg-[#0066cc] text-white px-8 py-4 rounded-t-2xl shadow-lg">
-              <h2 className="text-sm font-black uppercase tracking-[0.2em]">CUSTOMER ACCOUNT OPENING FORM</h2>
+              <h2 className="text-sm font-black uppercase tracking-[0.2em]">
+                {editingAccount ? 'EDIT CUSTOMER ACCOUNT DETAILS' : 'CUSTOMER ACCOUNT OPENING FORM'}
+              </h2>
             </div>
-            
+
             <div className="bg-white p-10 rounded-b-2xl shadow-xl border-x border-b border-slate-200">
               {/* Status Bar (Green box in image) */}
               <div className="w-full h-8 bg-[#00c58d] rounded-lg mb-8 relative">
-                 <button className="absolute right-2 top-1 text-white/50 hover:text-white">×</button>
+                <button className="absolute right-2 top-1 text-white/50 hover:text-white">×</button>
               </div>
 
               {success && (
@@ -249,10 +307,10 @@ export default function AccountsPage() {
                 {/* Account Number Field */}
                 <div>
                   <label className="text-xs font-black text-slate-900 uppercase tracking-widest mb-2 block">Account number</label>
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={generatedAccountNumber}
+                  <input
+                    type="text"
+                    readOnly
+                    value={editingAccount ? editingAccount.account_number : generatedAccountNumber}
                     className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-lg font-black tracking-widest text-[#0b1424] cursor-not-allowed shadow-inner"
                   />
                 </div>
@@ -260,21 +318,23 @@ export default function AccountsPage() {
                 {/* Nested Box */}
                 <div className="bg-slate-50 rounded-3xl p-1 border border-slate-200 shadow-sm overflow-hidden">
                   <div className="bg-[#0066cc] text-white px-6 py-3">
-                    <h3 className="text-xs font-black uppercase tracking-widest">Open New Account</h3>
+                    <h3 className="text-xs font-black uppercase tracking-widest">
+                      {editingAccount ? 'Update Existing Account' : 'Open New Account'}
+                    </h3>
                   </div>
-                  
+
                   <div className="p-8 space-y-6">
                     {/* Select Customer */}
                     <div className="relative">
                       <label className="text-xs font-black text-slate-900 uppercase tracking-widest mb-2 block">Select Customer</label>
                       <div className="relative">
-                        <input 
+                        <input
                           type="text"
                           placeholder={selectedCustomer ? `${selectedCustomer.first_name} ${selectedCustomer.surname} (#${selectedCustomer.customer_number})` : "-- Select Customer --"}
                           value={searchCustomer}
                           onChange={(e) => {
-                             setSearchCustomer(e.target.value);
-                             setShowCustomerList(true);
+                            setSearchCustomer(e.target.value);
+                            setShowCustomerList(true);
                           }}
                           onFocus={() => setShowCustomerList(true)}
                           className={cn(
@@ -284,7 +344,7 @@ export default function AccountsPage() {
                         />
                         <ChevronDown className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-blue-400 pointer-events-none" />
                       </div>
-                      
+
                       {showCustomerList && searchCustomer && (
                         <div className="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto">
                           {filteredCustomers.length > 0 ? (
@@ -313,9 +373,9 @@ export default function AccountsPage() {
                     {/* Account Type */}
                     <div>
                       <label className="text-xs font-black text-slate-900 uppercase tracking-widest mb-2 block">Account Type</label>
-                      <select 
+                      <select
                         value={formData.account_type}
-                        onChange={(e) => setFormData({...formData, account_type: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, account_type: e.target.value })}
                         className="w-full p-4 bg-[#f0f9ff] border-2 border-slate-300 rounded-xl text-sm font-black text-slate-950 shadow-sm focus:ring-4 focus:ring-[#0066cc]/10 focus:bg-white focus:border-[#0066cc] outline-none appearance-none transition-all"
                       >
                         <option value="">-- Select Type --</option>
@@ -328,37 +388,48 @@ export default function AccountsPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                       <div>
-                          <label className="text-xs font-black text-slate-900 uppercase tracking-widest mb-2 block">Initial Balance (₵)</label>
-                          <input 
-                            type="number"
-                            placeholder="0.00"
-                            value={formData.initial_balance}
-                            onChange={(e) => setFormData({...formData, initial_balance: e.target.value})}
-                            className="w-full p-4 bg-[#f0f9ff] border-2 border-slate-300 rounded-xl text-sm font-black text-slate-950 shadow-sm focus:ring-4 focus:ring-[#0066cc]/10 focus:bg-white focus:border-[#0066cc] outline-none transition-all placeholder:text-slate-400"
-                          />
-                       </div>
-                       <div>
-                          <label className="text-xs font-black text-slate-900 uppercase tracking-widest mb-2 block">Name of Mobile Banker</label>
-                          <input 
-                            type="text"
-                            placeholder="Enter banker name..."
-                            value={formData.mobile_banker}
-                            onChange={(e) => setFormData({...formData, mobile_banker: e.target.value})}
-                            className="w-full p-4 bg-[#f0f9ff] border-2 border-slate-300 rounded-xl text-sm font-black text-slate-950 shadow-sm focus:ring-4 focus:ring-[#0066cc]/10 focus:bg-white focus:border-[#0066cc] outline-none transition-all placeholder:text-slate-400"
-                          />
-                       </div>
+                      <div>
+                        <label className="text-xs font-black text-slate-900 uppercase tracking-widest mb-2 block">Initial Balance (₵)</label>
+                        <input
+                          type="number"
+                          placeholder="0.00"
+                          value={formData.initial_balance}
+                          onChange={(e) => setFormData({ ...formData, initial_balance: e.target.value })}
+                          className="w-full p-4 bg-[#f0f9ff] border-2 border-slate-300 rounded-xl text-sm font-black text-slate-950 shadow-sm focus:ring-4 focus:ring-[#0066cc]/10 focus:bg-white focus:border-[#0066cc] outline-none transition-all placeholder:text-slate-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-black text-slate-900 uppercase tracking-widest mb-2 block">Name of Mobile Banker</label>
+                        <input
+                          type="text"
+                          placeholder="Enter banker name..."
+                          value={formData.mobile_banker}
+                          onChange={(e) => setFormData({ ...formData, mobile_banker: e.target.value })}
+                          className="w-full p-4 bg-[#f0f9ff] border-2 border-slate-300 rounded-xl text-sm font-black text-slate-950 shadow-sm focus:ring-4 focus:ring-[#0066cc]/10 focus:bg-white focus:border-[#0066cc] outline-none transition-all placeholder:text-slate-400"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <button 
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full py-5 bg-[#00c58d] text-white rounded-2xl text-base font-black uppercase tracking-[0.2em] shadow-lg shadow-[#00c58d]/20 hover:bg-[#00ad7c] active:scale-95 transition-all flex items-center justify-center"
-                >
-                  {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : 'CONFIRM AND OPEN ACCOUNT'}
-                </button>
+                <div className="flex space-x-4">
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex-1 py-5 bg-[#00c58d] text-white rounded-2xl text-base font-black uppercase tracking-[0.2em] shadow-lg shadow-[#00c58d]/20 hover:bg-[#00ad7c] active:scale-95 transition-all flex items-center justify-center"
+                  >
+                    {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : (editingAccount ? 'UPDATE ACCOUNT' : 'CONFIRM AND OPEN ACCOUNT')}
+                  </button>
+                  {editingAccount && (
+                    <button
+                      type="button"
+                      onClick={resetForm}
+                      className="px-8 py-5 bg-slate-500 text-white rounded-2xl text-base font-black uppercase tracking-widest shadow-lg hover:bg-slate-600 active:scale-95 transition-all"
+                    >
+                      CANCEL
+                    </button>
+                  )}
+                </div>
               </form>
             </div>
           </div>
@@ -366,139 +437,137 @@ export default function AccountsPage() {
 
         {activeTab === 'manage' && (
           <div className="animate-in fade-in duration-500">
-             {/* Search and Filters */}
-             <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 px-4">
-                <div>
-                   <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">MANAGE ACCOUNTS</h2>
-                   <p className="text-sm font-bold text-slate-400 mt-1 uppercase tracking-widest">Active records in the system</p>
-                </div>
-                <div className="relative flex-1 max-w-md">
-                  <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input 
-                    type="text"
-                    placeholder="Search by name or account number..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 focus:ring-2 focus:ring-[#0066cc]/10 focus:border-[#0066cc]/50 rounded-2xl text-sm transition-all outline-none font-medium shadow-sm"
-                  />
-                </div>
+            {/* Search and Filters */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 px-4">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">MANAGE ACCOUNTS</h2>
+                <p className="text-sm font-bold text-slate-400 mt-1 uppercase tracking-widest">Active records in the system</p>
               </div>
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name or account number..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 focus:ring-2 focus:ring-[#0066cc]/10 focus:border-[#0066cc]/50 rounded-2xl text-sm transition-all outline-none font-bold text-slate-900 shadow-sm"
+                />
+              </div>
+            </div>
 
-              {/* Table Section */}
-              <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-slate-800 text-white">
-                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest">Account Details</th>
-                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest">Type / Status</th>
-                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest">Mobile Banker</th>
-                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest">Current Balance</th>
-                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {loading ? (
-                        Array(5).fill(0).map((_, i) => (
-                          <tr key={i} className="animate-pulse">
-                            <td colSpan={5} className="px-8 py-10"><div className="h-4 bg-slate-100 rounded w-full"></div></td>
-                          </tr>
-                        ))
-                      ) : filteredAccounts.map((account) => (
-                        <tr key={account.account_number} className="hover:bg-slate-50/50 transition-colors group">
-                          <td className="px-8 py-6">
-                            <div className="flex items-center space-x-4">
-                              <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-[#0066cc] shadow-sm border border-blue-100 flex-shrink-0">
-                                <CreditCard className="w-6 h-6" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-black text-slate-900 leading-none mb-1.5 underline decoration-blue-200 underline-offset-4">
-                                  {account.account_number}
-                                </p>
-                                <p className="text-[11px] font-bold text-slate-400 flex items-center uppercase tracking-tight">
-                                  <User className="w-3 h-3 mr-1.5 text-blue-400" />
-                                  {account.first_name} {account.surname}
-                                </p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className="flex flex-col space-y-1.5">
-                              <span className="text-[10px] font-black text-slate-600 uppercase tracking-tighter flex items-center">
-                                <ShieldCheck className="w-3.5 h-3.5 mr-2 text-[#0066cc]" />
-                                {account.account_type_name}
-                              </span>
-                              <span className={cn(
-                                "inline-flex items-center px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest w-fit border shadow-sm",
-                                account.account_status_name === 'Active' 
-                                  ? "bg-green-50 text-green-700 border-green-200" 
-                                  : "bg-red-50 text-red-700 border-red-200"
-                              )}>
-                                {account.account_status_name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-8 py-6">
-                             <div className="flex items-center space-x-2">
-                                <Activity className="w-4 h-4 text-blue-200" />
-                                <span className="text-[11px] font-black text-slate-600 uppercase">{account.mobile_banker || '---'}</span>
-                             </div>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className="flex flex-col">
-                              <span className="text-lg font-black text-slate-900 tracking-tighter">
-                                ₵{parseFloat(account.balance.toString()).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                              </span>
-                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center mt-1">
-                                {new Date(account.created_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-8 py-6 text-right">
-                            <button className="p-2.5 text-slate-300 hover:text-[#0066cc] hover:bg-blue-50 rounded-xl transition-all">
-                              <MoreVertical className="w-5 h-5" />
-                            </button>
-                          </td>
+            {/* Table Section */}
+            {/* Table Section */}
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden mt-4">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#00FF00] text-black border-b border-green-400">
+                      <th className="px-4 py-4 text-sm font-bold uppercase">SN</th>
+                      <th className="px-4 py-4 text-sm font-bold uppercase underline">Account number</th>
+                      <th className="px-4 py-4 text-sm font-bold uppercase">Account Name</th>
+                      <th className="px-4 py-4 text-sm font-bold uppercase">Account Type</th>
+                      <th className="px-4 py-4 text-sm font-bold uppercase">Customer Type</th>
+                      <th className="px-4 py-4 text-sm font-bold uppercase">Account Status</th>
+                      <th className="px-4 py-4 text-sm font-bold uppercase">Date Open</th>
+                      <th className="px-4 py-4 text-sm font-bold uppercase text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {loading ? (
+                      Array(5).fill(0).map((_, i) => (
+                        <tr key={i} className="animate-pulse">
+                          <td colSpan={8} className="px-4 py-10"><div className="h-4 bg-slate-100 rounded w-full"></div></td>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      ))
+                    ) : filteredAccounts.map((account, index) => (
+                      <tr key={account.account_number} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-4 py-5 text-sm font-medium">{index + 1}</td>
+                        <td className="px-4 py-5 font-bold text-sm underline">{account.account_number}</td>
+                        <td className="px-4 py-5 font-bold text-sm">{account.first_name} {account.surname}</td>
+                        <td className="px-4 py-5 font-bold text-sm">{account.account_type_name}</td>
+                        <td className="px-4 py-5 font-bold text-sm">{account.customer_type_name || 'Regular Customer'}</td>
+                        <td className="px-4 py-5 font-bold text-sm">
+                          <span className={cn(
+                            "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest",
+                            account.account_status_name === 'Active' ? "text-green-600" : "text-red-600"
+                          )}>
+                            {account.account_status_name}
+                          </span>
+                        </td>
+                        <td className="px-4 py-5 font-bold text-sm">
+                          {new Date(account.created_at).toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('/')}
+                        </td>
+                        <td className="px-4 py-5 text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={() => handleEdit(account)}
+                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                              title="Edit"
+                            >
+                              <Plus className="w-4 h-4 rotate-45" /> {/* Using Plus rotated for edit or just text? image says edit */}
+                              <span className="text-xs font-bold uppercase ml-1">Edit</span>
+                            </button>
+                            <button
+                              onClick={() => handleDelete(account.account_number)}
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                              title="Delete"
+                            >
+                              <span className="text-xs font-bold uppercase">Delete</span>
+                            </button>
+                            <button
+                              onClick={() => handlePrintSingle(account)}
+                              className="p-1.5 text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                              title="Print"
+                            >
+                              <span className="text-xs font-bold uppercase">Print</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {filteredAccounts.length === 0 && !loading && (
+                  <div className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-sm">
+                    No accounts found.
+                  </div>
+                )}
               </div>
+            </div>
           </div>
         )}
 
         {activeTab === 'print' && (
           <div className="animate-in fade-in duration-500 max-w-4xl mx-auto text-center py-20">
-             <div className="w-24 h-24 bg-slate-100 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
-                <Printer className="w-10 h-10 text-slate-300" />
-             </div>
-             <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase mb-4">Print & Export Reports</h2>
-             <p className="text-slate-500 font-bold uppercase tracking-widest text-xs mb-12">Select your preferred format to export the accounts database</p>
-             
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-10">
-                <button 
-                  onClick={exportToCSV}
-                  className="flex flex-col items-center justify-center p-10 bg-white border border-slate-200 rounded-[2.5rem] hover:border-[#00c58d] hover:shadow-2xl transition-all group"
-                >
-                   <div className="w-16 h-16 bg-[#00c58d]/5 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                      <Download className="w-8 h-8 text-[#00c58d]" />
-                   </div>
-                   <h3 className="text-lg font-black text-slate-900 uppercase mb-2">Export to Excel</h3>
-                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">CSV format for spreadsheets</p>
-                </button>
+            <div className="w-24 h-24 bg-slate-100 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
+              <Printer className="w-10 h-10 text-slate-300" />
+            </div>
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase mb-4">Print & Export Reports</h2>
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-xs mb-12">Select your preferred format to export the accounts database</p>
 
-                <button 
-                  onClick={() => window.print()}
-                  className="flex flex-col items-center justify-center p-10 bg-white border border-slate-200 rounded-[2.5rem] hover:border-blue-500 hover:shadow-2xl transition-all group"
-                >
-                   <div className="w-16 h-16 bg-blue-500/5 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                      <FileText className="w-8 h-8 text-blue-500" />
-                   </div>
-                   <h3 className="text-lg font-black text-slate-900 uppercase mb-2">Print to PDF</h3>
-                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">System generated report view</p>
-                </button>
-             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-10">
+              <button
+                onClick={exportToCSV}
+                className="flex flex-col items-center justify-center p-10 bg-white border border-slate-200 rounded-[2.5rem] hover:border-[#00c58d] hover:shadow-2xl transition-all group"
+              >
+                <div className="w-16 h-16 bg-[#00c58d]/5 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <Download className="w-8 h-8 text-[#00c58d]" />
+                </div>
+                <h3 className="text-lg font-black text-slate-900 uppercase mb-2">Export to Excel</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">CSV format for spreadsheets</p>
+              </button>
+
+              <button
+                onClick={() => window.print()}
+                className="flex flex-col items-center justify-center p-10 bg-white border border-slate-200 rounded-[2.5rem] hover:border-blue-500 hover:shadow-2xl transition-all group"
+              >
+                <div className="w-16 h-16 bg-blue-500/5 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <FileText className="w-8 h-8 text-blue-500" />
+                </div>
+                <h3 className="text-lg font-black text-slate-900 uppercase mb-2">Print to PDF</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">System generated report view</p>
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -509,4 +578,5 @@ export default function AccountsPage() {
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
 }
+
 

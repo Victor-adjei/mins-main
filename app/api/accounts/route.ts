@@ -23,11 +23,13 @@ export const GET = async (req: Request) => {
     const res = await query(`
       SELECT 
         a.*, 
-        c.first_name, c.surname,
+        c.first_name, c.surname, c.customer_type,
+        ct.customer_type_name,
         at.account_type_name,
         as_status.account_status_name
       FROM accounts a
       JOIN customers c ON a.customer = c.customer_number
+      LEFT JOIN customer_type ct ON c.customer_type::VARCHAR = ct.customer_type_number::VARCHAR
       LEFT JOIN account_type at ON a.account_type = at.account_type_number
       LEFT JOIN account_status as_status ON a.account_status = as_status.account_status_number
       ${whereClause}

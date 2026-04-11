@@ -48,6 +48,11 @@ export const POST = auth(async (req) => {
     if (transaction_type === 'Deposit') {
       newBalance += amount;
     } else if (transaction_type === 'Withdrawal') {
+      // Restriction: Field Officers cannot perform withdrawals
+      if (req.auth.user.role === 'Field Officer') {
+        throw new Error('Access Denied: Field Officers are restricted to Deposits only.');
+      }
+      
       if (currentBalance < amount) {
         throw new Error('Insufficient balance');
       }

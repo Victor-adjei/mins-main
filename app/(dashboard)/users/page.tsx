@@ -191,7 +191,7 @@ export default function UsersPage() {
               placeholder="Search users by name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-[#00c58d]/10 focus:border-[#00c58d]/50 rounded-xl text-sm transition-all outline-none font-medium"
+              className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-[#00c58d]/10 focus:border-[#00c58d]/50 rounded-xl text-sm transition-all outline-none font-bold text-slate-900"
             />
           </div>
         </div>
@@ -307,7 +307,7 @@ export default function UsersPage() {
             <select 
               value={newRole}
               onChange={(e) => setNewRole(e.target.value)}
-              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#00c58d]/20 outline-none mb-6"
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#00c58d]/20 outline-none mb-6 text-slate-900"
             >
               <option value="Admin">Admin</option>
               <option value="Staff">Staff</option>
@@ -353,7 +353,7 @@ export default function UsersPage() {
               placeholder="Enter new password..."
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-amber-500/20 outline-none mb-6"
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-amber-500/20 outline-none mb-6 text-slate-900"
             />
 
             <div className="flex space-x-3">
@@ -393,7 +393,7 @@ export default function UsersPage() {
                   placeholder="e.g. John Doe"
                   value={newUserForm.username}
                   onChange={(e) => setNewUserForm({...newUserForm, username: e.target.value})}
-                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#00c58d]/20 outline-none"
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#00c58d]/20 outline-none text-slate-900"
                 />
               </div>
               <div>
@@ -403,7 +403,7 @@ export default function UsersPage() {
                   placeholder="john@example.com"
                   value={newUserForm.email}
                   onChange={(e) => setNewUserForm({...newUserForm, email: e.target.value})}
-                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#00c58d]/20 outline-none"
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#00c58d]/20 outline-none text-slate-900"
                 />
               </div>
               <div>
@@ -413,7 +413,7 @@ export default function UsersPage() {
                   placeholder="e.g. 0244000000"
                   value={newUserForm.phone}
                   onChange={(e) => setNewUserForm({...newUserForm, phone: e.target.value})}
-                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#00c58d]/20 outline-none"
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#00c58d]/20 outline-none text-slate-900"
                 />
               </div>
               <div>
@@ -423,7 +423,7 @@ export default function UsersPage() {
                   placeholder="••••••••"
                   value={newUserForm.password}
                   onChange={(e) => setNewUserForm({...newUserForm, password: e.target.value})}
-                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#00c58d]/20 outline-none"
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#00c58d]/20 outline-none text-slate-900"
                 />
               </div>
               <div>
@@ -431,7 +431,7 @@ export default function UsersPage() {
                 <select 
                   value={newUserForm.role}
                   onChange={(e) => setNewUserForm({...newUserForm, role: e.target.value})}
-                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#00c58d]/20 outline-none"
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#00c58d]/20 outline-none text-slate-900"
                 >
                   <option value="Admin">Admin</option>
                   <option value="Staff">Staff</option>

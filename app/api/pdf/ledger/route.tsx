@@ -13,14 +13,24 @@ export const GET = auth(async (req) => {
   const endDate = searchParams.get('end_date') || new Date().toISOString().split('T')[0];
 
   try {
-    const res = await query(`
+    const isFieldOfficer = req.auth.user.role === 'Field Officer';
+    const queryParams: any[] = [startDate, endDate];
+    let sql = `
       SELECT t.*, c.first_name, c.surname
       FROM transactions t
       JOIN accounts a ON t.account_number = a.account_number
       JOIN customers c ON a.customer = c.customer_number
       WHERE CAST(t.transaction_date AS DATE) BETWEEN $1 AND $2
-      ORDER BY t.transaction_date DESC
-    `, [startDate, endDate]);
+    `;
+
+    if (isFieldOfficer) {
+      sql += ` AND c.mobile_banker = $3`;
+      queryParams.push(req.auth.user.name);
+    }
+
+    sql += ` ORDER BY t.transaction_date DESC`;
+
+    const res = await query(sql, queryParams);
     
     const transactions = res.rows;
 

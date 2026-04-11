@@ -12,6 +12,7 @@ import {
   XCircle,
   AlertCircle
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface Account {
   account_number: string;
@@ -30,6 +31,14 @@ export default function TransactionsPage() {
 
   const [fetchingAccount, setFetchingAccount] = useState(false);
   const [selectedAccountDetails, setSelectedAccountDetails] = useState<Account | null>(null);
+  const { data: session } = useSession();
+  const isFieldOfficer = session?.user?.role === 'Field Officer';
+
+  useEffect(() => {
+    if (isFieldOfficer) {
+      setType('Deposit');
+    }
+  }, [isFieldOfficer]);
 
   useEffect(() => {
     if (accountNumber.length === 10) {
@@ -160,10 +169,12 @@ export default function TransactionsPage() {
                     </button>
                     <button
                       type="button"
+                      disabled={isFieldOfficer}
                       onClick={() => setType('Withdrawal')}
                       className={cn(
                         "py-4 rounded-2xl font-bold text-sm flex items-center justify-center space-x-2 transition-all",
-                        type === 'Withdrawal' ? "bg-rose-600 text-white shadow-lg shadow-rose-500/20" : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                        type === 'Withdrawal' ? "bg-rose-600 text-white shadow-lg shadow-rose-500/20" : "bg-slate-50 text-slate-400 hover:bg-slate-100",
+                        isFieldOfficer && "opacity-50 cursor-not-allowed"
                       )}
                     >
                       <ArrowDownLeft className="w-4 h-4" />
@@ -183,7 +194,7 @@ export default function TransactionsPage() {
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     required
-                    className="w-full pl-16 pr-5 py-5 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 rounded-2xl text-2xl font-black transition-all outline-none"
+                    className="w-full pl-16 pr-5 py-5 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 rounded-2xl text-2xl font-black transition-all outline-none text-slate-900"
                     placeholder="0.00"
                   />
                 </div>
@@ -194,7 +205,7 @@ export default function TransactionsPage() {
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-5 py-4 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 rounded-2xl text-sm font-medium transition-all outline-none h-24"
+                  className="w-full px-5 py-4 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 rounded-2xl text-sm font-bold transition-all outline-none h-24 text-slate-900"
                   placeholder="What is this transaction for?"
                 />
               </div>
