@@ -215,7 +215,8 @@ export default function CustomersPage() {
       ghana_card_number: customer.ghana_card_number || '',
       mobile_banker: customer.mobile_banker || '',
       customer_type: customer.customer_type?.toString() || '',
-      passport_photo: customer.passport_photo || ''
+      passport_photo: customer.passport_photo || '',
+      customer_number: customer.customer_number || ''
     });
     setPreviewUrl(customer.passport_photo || null);
     setActiveTab('add');
@@ -577,5 +578,6 @@ export default function CustomersPage() {
     </div>
   );
 }
+
 
 
