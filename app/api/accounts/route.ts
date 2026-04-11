@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { auth } from '@/auth';
 
-export const GET = auth(async (req) => {
-  if (!req.auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export const GET = async (req: Request) => {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const res = await query(`
       SELECT 
@@ -17,32 +21,41 @@ export const GET = auth(async (req) => {
       LEFT JOIN account_status as_status ON a.account_status = as_status.account_status_number
       ORDER BY a.created_at DESC
     `);
-    return NextResponse.json(res.rows);
+    
+    // Ensure we always return an array
+    const rows = Array.isArray(res.rows) ? res.rows : [];
+    return NextResponse.json(rows);
   } catch (error) {
     console.error('Accounts GET Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-});
+};
 
 export const POST = auth(async (req) => {
   if (!req.auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
-    const { customer_id, account_type_id, account_status_id, initial_balance } = await req.json();
-    
-    // Auto-generate a 10-digit account number
-    // We use a high range to ensure 10 digits and minimize collision probability
-    const account_number = Math.floor(1000000000 + Math.random() * 9000000000).toString();
+    const { 
+      customer_number, 
+      account_type, 
+      initial_balance,
+      mobile_banker
+    } = await req.json();
 
     const res = await query(`
-      INSERT INTO accounts (account_number, customer, account_type, account_status, balance)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO accounts (
+        customer, 
+        account_type, 
+        balance, 
+        account_status,
+        mobile_banker
+      )
+      VALUES ($1, $2, $3, 1, $4)
       RETURNING *
-    `, [account_number, customer_id, account_type_id, account_status_id, initial_balance || 0]);
+    `, [customer_number, account_type, initial_balance || 0, mobile_banker]);
     
     return NextResponse.json(res.rows[0]);
   } catch (error: any) {
-    console.error('Account Create Error:', error);
-    // Handle unique constraint violation if necessary (statistically rare with 10 digits)
+    console.error('Accounts POST Error:', error);
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 });

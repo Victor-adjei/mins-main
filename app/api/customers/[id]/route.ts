@@ -32,24 +32,37 @@ export const PUT = auth(async (req, { params }) => {
     const body = await req.json();
     const { 
       first_name, 
+      middle_name,
       surname, 
       gender, 
+      date_of_birth,
+      nationality,
       phone_number, 
       ghana_card_number, 
       mobile_banker, 
-      passport_photo 
+      passport_photo,
+      customer_type
     } = body;
 
     const res = await query(`
       UPDATE customers 
-      SET first_name = $1, surname = $2, gender = $3, 
-          phone_number = $4, ghana_card_number = $5, 
-          mobile_banker = $6, passport_photo = $7
-      WHERE customer_number = $8
+      SET first_name = $1, 
+          middle_name = $2,
+          surname = $3, 
+          gender = $4, 
+          date_of_birth = $5,
+          nationality = $6,
+          phone_number = $7, 
+          ghana_card_number = $8, 
+          mobile_banker = $9, 
+          passport_photo = $10,
+          customer_type = $11
+      WHERE customer_number = $12
       RETURNING *
     `, [
-      first_name, surname, gender, phone_number, 
-      ghana_card_number, mobile_banker, passport_photo, id
+      first_name, middle_name, surname, gender, date_of_birth,
+      nationality, phone_number, ghana_card_number, 
+      mobile_banker, passport_photo, customer_type, id
     ]);
 
     if (res.rows.length === 0) {

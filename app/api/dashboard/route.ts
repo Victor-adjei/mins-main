@@ -9,7 +9,7 @@ export const GET = auth(async (req) => {
 
   try {
     const [custTypes, accTypes, customers, accounts] = await Promise.all([
-      query('SELECT COUNT(*) FROM customer_type'),
+      query('SELECT COUNT(*) FROM customers_type'),
       query('SELECT COUNT(*) FROM account_type'),
       query('SELECT COUNT(*) FROM customers'),
       query('SELECT COUNT(*) FROM accounts'),
