@@ -194,7 +194,8 @@ export default function CustomersPage() {
       ghana_card_number: '',
       mobile_banker: '',
       customer_type: customerTypes[0]?.customer_type_number.toString() || '',
-      passport_photo: ''
+      passport_photo: '',
+      customer_number: nextCustomerNumber
     });
     setPreviewUrl(null);
     setEditingCustomer(null);
