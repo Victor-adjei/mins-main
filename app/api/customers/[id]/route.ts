@@ -10,14 +10,14 @@ export const GET = auth(async (req, { params }) => {
   const { id } = await params as { id: string };
 
   try {
-    const res = await query('SELECT * FROM customers WHERE customer_number = $1', [id]);
+    const res = await query('SELECT * FROM customers WHERE customer_number::VARCHAR = $1::VARCHAR', [id]);
     if (res.rows.length === 0) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
     return NextResponse.json(res.rows[0]);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Single Customer API Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 });
 
@@ -57,7 +57,7 @@ export const PUT = auth(async (req, { params }) => {
           mobile_banker = $9, 
           passport_photo = $10,
           customer_type = $11
-      WHERE customer_number = $12
+      WHERE customer_number::VARCHAR = $12::VARCHAR
       RETURNING *
     `, [
       first_name, middle_name, surname, gender, date_of_birth,
@@ -84,13 +84,13 @@ export const DELETE = auth(async (req, { params }) => {
   const { id } = await params as { id: string };
 
   try {
-    const res = await query('DELETE FROM customers WHERE customer_number = $1 RETURNING *', [id]);
+    const res = await query('DELETE FROM customers WHERE customer_number::VARCHAR = $1::VARCHAR RETURNING *', [id]);
     if (res.rows.length === 0) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
     return NextResponse.json({ message: 'Customer deleted successfully' });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Delete Customer API Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 });

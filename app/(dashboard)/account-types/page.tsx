@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Banknote,
   Plus, 
@@ -14,7 +15,8 @@ import {
   RotateCcw,
   LayoutGrid,
   FileText,
-  AlertCircle
+  AlertCircle,
+  X
 } from 'lucide-react';
 
 interface AccountType {
@@ -30,6 +32,9 @@ export default function AccountTypesPage() {
   const [dataLoading, setDataLoading] = useState(true);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editingType, setEditingType] = useState<AccountType | null>(null);
+  const [editName, setEditName] = useState('');
+  const router = useRouter();
 
   // Generated Type Number for display
   const generatedTypeNumber = useMemo(() => {
@@ -72,6 +77,7 @@ export default function AccountTypesPage() {
         setSuccess('Account type added successfully!');
         setName('');
         fetchTypes();
+        router.refresh(); // Update dashboard stats
         setTimeout(() => setSuccess(null), 3000);
       } else {
         const data = await res.json();
@@ -79,6 +85,59 @@ export default function AccountTypesPage() {
       }
     } catch (err) {
       setError('Network error.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this account type? This may affect existing accounts.')) return;
+    
+    try {
+      const res = await fetch(`/api/account-types/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setSuccess('Account type deleted successfully');
+        fetchTypes();
+        router.refresh(); // Update dashboard stats
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Failed to delete');
+      }
+    } catch (err) {
+      setError('Network error');
+    }
+  };
+
+  const startEdit = (type: AccountType) => {
+    setEditingType(type);
+    setEditName(type.account_type_name);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingType || !editName.trim()) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/account-types/${editingType.account_type_number}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editName }),
+      });
+
+      if (res.ok) {
+        setSuccess('Account type updated successfully');
+        setEditingType(null);
+        fetchTypes();
+        router.refresh();
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Failed to update');
+      }
+    } catch (err) {
+      setError('Network error');
     } finally {
       setLoading(false);
     }
@@ -241,17 +300,37 @@ export default function AccountTypesPage() {
                                <span className="font-black text-slate-900 tracking-widest text-sm">#{type.account_type_number}</span>
                             </td>
                             <td className="px-8 py-6">
-                               <div className="flex items-center space-x-3">
-                                  <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center font-black">
-                                     {type.account_type_name[0]}
+                               {editingType?.account_type_number === type.account_type_number ? (
+                                  <form onSubmit={handleUpdate} className="flex items-center space-x-2">
+                                     <input 
+                                        type="text" 
+                                        value={editName}
+                                        onChange={(e) => setEditName(e.target.value)}
+                                        className="p-2 border-2 border-blue-400 rounded-lg text-sm font-black outline-none focus:ring-2 focus:ring-blue-100 bg-[#f0f9ff]"
+                                        autoFocus
+                                     />
+                                     <button type="submit" className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"><CheckCircle2 className="w-5 h-5" /></button>
+                                     <button type="button" onClick={() => setEditingType(null)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-lg transition-all"><X className="w-5 h-5" /></button>
+                                  </form>
+                               ) : (
+                                  <div className="flex items-center space-x-3">
+                                     <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center font-black">
+                                        {type.account_type_name[0]}
+                                     </div>
+                                     <span className="font-black text-slate-700 text-sm uppercase tracking-tight">{type.account_type_name}</span>
                                   </div>
-                                  <span className="font-black text-slate-700 text-sm uppercase tracking-tight">{type.account_type_name}</span>
-                               </div>
+                               )}
                             </td>
                             <td className="px-8 py-6 text-right">
                                <div className="flex justify-end space-x-2">
-                                  <button className="p-2 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Edit2 className="w-4 h-4" /></button>
-                                  <button className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"><Trash2 className="w-4 h-4" /></button>
+                                  <button 
+                                     onClick={() => startEdit(type)}
+                                     className="p-2 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                  ><Edit2 className="w-4 h-4" /></button>
+                                  <button 
+                                     onClick={() => handleDelete(type.account_type_number)}
+                                     className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                  ><Trash2 className="w-4 h-4" /></button>
                                </div>
                             </td>
                          </tr>

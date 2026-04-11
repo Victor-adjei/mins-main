@@ -25,7 +25,7 @@ interface Account {
   account_number: number | string;
   first_name: string;
   surname: string;
-  customer_number: number | string;
+  customer_number: string;
   account_type_name: string;
   account_status_name: string;
   balance: string | number;
@@ -34,7 +34,7 @@ interface Account {
 }
 
 interface Customer {
-  customer_number: number;
+  customer_number: string;
   first_name: string;
   surname: string;
 }
@@ -123,7 +123,8 @@ export default function AccountsPage() {
           customer_number: selectedCustomer.customer_number,
           account_type: formData.account_type,
           initial_balance: parseFloat(formData.initial_balance) || 0,
-          mobile_banker: formData.mobile_banker
+          mobile_banker: formData.mobile_banker,
+          account_number: generatedAccountNumber
         }),
       });
 
@@ -412,7 +413,7 @@ export default function AccountsPage() {
                               </div>
                               <div>
                                 <p className="text-sm font-black text-slate-900 leading-none mb-1.5 underline decoration-blue-200 underline-offset-4">
-                                  #{account.account_number}
+                                  {account.account_number}
                                 </p>
                                 <p className="text-[11px] font-bold text-slate-400 flex items-center uppercase tracking-tight">
                                   <User className="w-3 h-3 mr-1.5 text-blue-400" />

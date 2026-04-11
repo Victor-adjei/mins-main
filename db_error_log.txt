@@ -1,0 +1,36 @@
+
+[2026-04-11T16:48:55.828Z] Query Error (228ms): Connection terminated unexpectedly
+Text: 
+      INSERT INTO customers (
+        first_name, middle_name, surname, gender, date_of_birth,
+        nationality, phone_number, ghana_card_number, 
+        mobile_banker, passport_photo, customer_type
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      RETURNING *
+    
+Params: ["Kofi","Adjei","Badu","Male","1998-11-11","Ghanaian","0205432211","GHA-222253-2","Madame Esther",null,"495714959"]
+Stack: Error: Connection terminated unexpectedly
+    at V:\desktop\mims-next\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async query (webpack-internal:///(rsc)/./lib/db.ts:30:21)
+    at async eval (webpack-internal:///(rsc)/./app/api/customers/route.ts:53:21)
+    at async handleAuth (webpack-internal:///(rsc)/./node_modules/next-auth/lib/index.js:161:14)
+    at async AppRouteRouteModule.do (V:\desktop\mims-next\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:5:40115)
+    at async AppRouteRouteModule.handle (V:\desktop\mims-next\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:5:47321)
+    at async responseGenerator (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fcustomers%2Froute&page=%2Fapi%2Fcustomers%2Froute&appPaths=&allNormalizedAppPaths=&pagePath=private-next-app-dir%2Fapi%2Fcustomers%2Froute.ts&appDir=V%3A%5Cdesktop%5Cmims-next%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=V%3A%5Cdesktop%5Cmims-next&isDev=true&tsconfigPath=&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:253:38)
+    at async AppRouteRouteModule.handleResponse (V:\desktop\mims-next\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:1:227141)
+    at async handleResponse (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fcustomers%2Froute&page=%2Fapi%2Fcustomers%2Froute&appPaths=&allNormalizedAppPaths=&pagePath=private-next-app-dir%2Fapi%2Fcustomers%2Froute.ts&appDir=V%3A%5Cdesktop%5Cmims-next%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=V%3A%5Cdesktop%5Cmims-next&isDev=true&tsconfigPath=&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:316:32)
+    at async Module.handler (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fcustomers%2Froute&page=%2Fapi%2Fcustomers%2Froute&appPaths=&allNormalizedAppPaths=&pagePath=private-next-app-dir%2Fapi%2Fcustomers%2Froute.ts&appDir=V%3A%5Cdesktop%5Cmims-next%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=V%3A%5Cdesktop%5Cmims-next&isDev=true&tsconfigPath=&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:371:13)
+    at async DevServer.renderToResponseWithComponentsImpl (V:\desktop\mims-next\node_modules\next\dist\server\base-server.js:1454:9)
+    at async DevServer.renderPageComponent (V:\desktop\mims-next\node_modules\next\dist\server\base-server.js:1506:24)
+    at async DevServer.renderToResponseImpl (V:\desktop\mims-next\node_modules\next\dist\server\base-server.js:1556:32)
+    at async DevServer.pipeImpl (V:\desktop\mims-next\node_modules\next\dist\server\base-server.js:1043:25)
+    at async NextNodeServer.handleCatchallRenderRequest (V:\desktop\mims-next\node_modules\next\dist\server\next-server.js:338:17)
+    at async DevServer.handleRequestImpl (V:\desktop\mims-next\node_modules\next\dist\server\base-server.js:934:17)
+    at async V:\desktop\mims-next\node_modules\next\dist\server\dev\next-dev-server.js:394:20
+    at async Span.traceAsyncFn (V:\desktop\mims-next\node_modules\next\dist\trace\trace.js:164:20)
+    at async DevServer.handleRequest (V:\desktop\mims-next\node_modules\next\dist\server\dev\next-dev-server.js:390:24)
+    at async invokeRender (V:\desktop\mims-next\node_modules\next\dist\server\lib\router-server.js:266:21)
+    at async handleRequest (V:\desktop\mims-next\node_modules\next\dist\server\lib\router-server.js:465:24)
+    at async requestHandlerImpl (V:\desktop\mims-next\node_modules\next\dist\server\lib\router-server.js:514:13)
+    at async Server.requestListener (V:\desktop\mims-next\node_modules\next\dist\server\lib\start-server.js:225:13)

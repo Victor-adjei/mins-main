@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Settings2,
   Plus, 
@@ -14,7 +15,8 @@ import {
   RotateCcw,
   LayoutGrid,
   FileText,
-  AlertCircle
+  AlertCircle,
+  X
 } from 'lucide-react';
 
 interface AccountStatus {
@@ -30,6 +32,9 @@ export default function AccountStatusPage() {
   const [dataLoading, setDataLoading] = useState(true);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editingStatus, setEditingStatus] = useState<AccountStatus | null>(null);
+  const [editName, setEditName] = useState('');
+  const router = useRouter();
 
   // Generated Status Number for display
   const generatedStatusNumber = useMemo(() => {
@@ -72,6 +77,7 @@ export default function AccountStatusPage() {
         setSuccess('Account status added successfully!');
         setName('');
         fetchStatuses();
+        router.refresh();
         setTimeout(() => setSuccess(null), 3000);
       } else {
         const data = await res.json();
@@ -79,6 +85,59 @@ export default function AccountStatusPage() {
       }
     } catch (err) {
       setError('Network error.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this account status?')) return;
+    
+    try {
+      const res = await fetch(`/api/account-status/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setSuccess('Account status deleted successfully');
+        fetchStatuses();
+        router.refresh();
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Failed to delete');
+      }
+    } catch (err) {
+      setError('Network error');
+    }
+  };
+
+  const startEdit = (status: AccountStatus) => {
+    setEditingStatus(status);
+    setEditName(status.account_status_name);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStatus || !editName.trim()) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/account-status/${editingStatus.account_status_number}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editName }),
+      });
+
+      if (res.ok) {
+        setSuccess('Account status updated successfully');
+        setEditingStatus(null);
+        fetchStatuses();
+        router.refresh();
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Failed to update');
+      }
+    } catch (err) {
+      setError('Network error');
     } finally {
       setLoading(false);
     }
@@ -239,17 +298,37 @@ export default function AccountStatusPage() {
                                <span className="font-black text-slate-900 tracking-widest text-sm">#{status.account_status_number}</span>
                             </td>
                             <td className="px-8 py-6">
-                               <div className="flex items-center space-x-3">
-                                  <div className="w-8 h-8 rounded-lg bg-yellow-50 text-yellow-600 flex items-center justify-center font-black">
-                                     {status.account_status_name[0]}
+                               {editingStatus?.account_status_number === status.account_status_number ? (
+                                  <form onSubmit={handleUpdate} className="flex items-center space-x-2">
+                                     <input 
+                                        type="text" 
+                                        value={editName}
+                                        onChange={(e) => setEditName(e.target.value)}
+                                        className="p-2 border-2 border-yellow-400 rounded-lg text-sm font-black outline-none focus:ring-2 focus:ring-yellow-100 bg-[#fefce8]"
+                                        autoFocus
+                                     />
+                                     <button type="submit" className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"><CheckCircle2 className="w-5 h-5" /></button>
+                                     <button type="button" onClick={() => setEditingStatus(null)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-lg transition-all"><X className="w-5 h-5" /></button>
+                                  </form>
+                               ) : (
+                                  <div className="flex items-center space-x-3">
+                                     <div className="w-8 h-8 rounded-lg bg-yellow-50 text-yellow-600 flex items-center justify-center font-black">
+                                        {status.account_status_name[0]}
+                                     </div>
+                                     <span className="font-black text-slate-700 text-sm uppercase tracking-tight">{status.account_status_name}</span>
                                   </div>
-                                  <span className="font-black text-slate-700 text-sm uppercase tracking-tight">{status.account_status_name}</span>
-                               </div>
+                               )}
                             </td>
                             <td className="px-8 py-6 text-right">
                                <div className="flex justify-end space-x-2">
-                                  <button className="p-2 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Edit2 className="w-4 h-4" /></button>
-                                  <button className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"><Trash2 className="w-4 h-4" /></button>
+                                  <button 
+                                     onClick={() => startEdit(status)}
+                                     className="p-2 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                  ><Edit2 className="w-4 h-4" /></button>
+                                  <button 
+                                     onClick={() => handleDelete(status.account_status_number)}
+                                     className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                  ><Trash2 className="w-4 h-4" /></button>
                                </div>
                             </td>
                          </tr>

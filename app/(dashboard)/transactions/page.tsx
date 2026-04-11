@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  ArrowUpRight, 
-  ArrowDownLeft, 
-  History, 
-  Search, 
-  Plus, 
+import {
+  ArrowUpRight,
+  ArrowDownLeft,
+  History,
+  Search,
+  Plus,
   Loader2,
   CheckCircle2,
   XCircle,
@@ -14,35 +14,47 @@ import {
 } from 'lucide-react';
 
 interface Account {
-  account_number: number;
+  account_number: string;
   first_name: string;
   surname: string;
-  balance: string;
+  balance: string | number;
 }
 
 export default function TransactionsPage() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountNumber, setAccountNumber] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<'Deposit' | 'Withdrawal'>('Deposit');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
-  const [dataLoading, setDataLoading] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  useEffect(() => {
-    fetchAccounts();
-  }, []);
+  const [fetchingAccount, setFetchingAccount] = useState(false);
+  const [selectedAccountDetails, setSelectedAccountDetails] = useState<Account | null>(null);
 
-  async function fetchAccounts() {
+  useEffect(() => {
+    if (accountNumber.length === 10) {
+      handleLookup(accountNumber);
+    } else {
+      setSelectedAccountDetails(null);
+    }
+  }, [accountNumber]);
+
+  async function handleLookup(accNum: string) {
+    setFetchingAccount(true);
     try {
-      const res = await fetch('/api/accounts');
+      const res = await fetch(`/api/accounts?accountNumber=${accNum}`);
       const data = await res.json();
-      setAccounts(data);
+      if (Array.isArray(data) && data.length > 0) {
+        setSelectedAccountDetails(data[0]);
+        setMessage(null);
+      } else {
+        setSelectedAccountDetails(null);
+        setMessage({ type: 'error', text: 'Account not found' });
+      }
     } catch (error) {
-      console.error('Error fetching accounts:', error);
+      console.error('Lookup error:', error);
     } finally {
-      setDataLoading(false);
+      setFetchingAccount(false);
     }
   }
 
@@ -56,7 +68,7 @@ export default function TransactionsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          account_number: parseInt(accountNumber),
+          account_number: accountNumber,
           transaction_type: type,
           amount: parseFloat(amount),
           description
@@ -70,7 +82,7 @@ export default function TransactionsPage() {
         setAccountNumber('');
         setAmount('');
         setDescription('');
-        fetchAccounts(); // Refresh accounts
+        setSelectedAccountDetails(null);
       } else {
         setMessage({ type: 'error', text: data.error || 'Transaction failed' });
       }
@@ -81,15 +93,9 @@ export default function TransactionsPage() {
     }
   };
 
-  const selectedAccountDetails = accounts.find(a => a.account_number === parseInt(accountNumber));
+  // Removed unnecessary dataLoading as we use on-demand fetch
+  // if (dataLoading) ...
 
-  if (dataLoading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -119,26 +125,29 @@ export default function TransactionsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-3">Select Account</label>
-                  <select 
-                    value={accountNumber}
-                    onChange={(e) => setAccountNumber(e.target.value)}
-                    required
-                    className="w-full px-5 py-4 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 rounded-2xl text-sm font-bold transition-all outline-none appearance-none"
-                  >
-                    <option value="">Choose Account</option>
-                    {accounts.map(acc => (
-                      <option key={acc.account_number} value={acc.account_number}>
-                        #{acc.account_number} - {acc.first_name} {acc.surname}
-                      </option>
-                    ))}
-                  </select>
+                  <label className="block text-sm font-black text-slate-900 uppercase tracking-widest mb-3 italic">Customer Account Number</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      maxLength={10}
+                      placeholder="Enter 10-digit A/C Number"
+                      value={accountNumber}
+                      onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ''))}
+                      required
+                      className="w-full px-5 py-5 bg-[#f0f9ff] border-2 border-slate-300 focus:bg-white focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] rounded-2xl text-xl font-black tracking-widest text-[#0b1424] transition-all outline-none"
+                    />
+                    {fetchingAccount && (
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                        <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-3">Transaction Type</label>
                   <div className="grid grid-cols-2 gap-3">
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setType('Deposit')}
                       className={cn(
@@ -149,7 +158,7 @@ export default function TransactionsPage() {
                       <ArrowUpRight className="w-4 h-4" />
                       <span>Deposit</span>
                     </button>
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setType('Withdrawal')}
                       className={cn(
@@ -167,22 +176,22 @@ export default function TransactionsPage() {
               <div>
                 <label className="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-3">Amount (GHS)</label>
                 <div className="relative">
-                   <div className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-400">GH₵</div>
-                   <input spellCheck={false} 
-                     type="number" 
-                     step="0.01"
-                     value={amount}
-                     onChange={(e) => setAmount(e.target.value)}
-                     required
-                     className="w-full pl-16 pr-5 py-5 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 rounded-2xl text-2xl font-black transition-all outline-none" 
-                     placeholder="0.00"
-                   />
+                  <div className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-400">GH₵</div>
+                  <input spellCheck={false}
+                    type="number"
+                    step="0.01"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    required
+                    className="w-full pl-16 pr-5 py-5 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 rounded-2xl text-2xl font-black transition-all outline-none"
+                    placeholder="0.00"
+                  />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-3">Description (Optional)</label>
-                <textarea 
+                <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full px-5 py-4 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 rounded-2xl text-sm font-medium transition-all outline-none h-24"
@@ -190,8 +199,8 @@ export default function TransactionsPage() {
                 />
               </div>
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={loading}
                 className={cn(
                   "w-full py-5 rounded-2xl text-white font-black text-lg transition-all active:scale-95 shadow-2xl flex items-center justify-center space-x-3",
@@ -221,7 +230,7 @@ export default function TransactionsPage() {
               <div className="relative z-10">
                 <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Current Balance</p>
                 <p className="text-4xl font-black tracking-tighter mb-6">
-                  ₵{parseFloat(selectedAccountDetails.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  ₵{Number(selectedAccountDetails.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </p>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center py-3 border-b border-slate-800">
@@ -239,7 +248,7 @@ export default function TransactionsPage() {
                 <p className="text-slate-500 text-sm font-medium">Select an account from the form to view real-time balance data.</p>
               </div>
             )}
-            
+
             <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-emerald-500 rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-opacity"></div>
           </div>
 
@@ -272,3 +281,4 @@ export default function TransactionsPage() {
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
 }
+

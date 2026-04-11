@@ -24,7 +24,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 interface Customer {
-  customer_number: number;
+  customer_number: string;
   first_name: string;
   middle_name: string;
   surname: string;
@@ -70,12 +70,16 @@ export default function CustomersPage() {
     ghana_card_number: '',
     mobile_banker: '',
     customer_type: '',
-    passport_photo: ''
+    passport_photo: '',
+    customer_number: ''
   });
+
+  const [nextCustomerNumber, setNextCustomerNumber] = useState('');
 
   useEffect(() => {
     fetchCustomers();
     fetchCustomerTypes();
+    setNextCustomerNumber(Math.floor(10000000 + Math.random() * 90000000).toString());
   }, []);
 
   async function fetchCustomers() {
@@ -146,11 +150,15 @@ export default function CustomersPage() {
     const method = editingCustomer ? 'PUT' : 'POST';
     const url = editingCustomer ? `/api/customers/${editingCustomer.customer_number}` : '/api/customers';
 
+    const submissionData = editingCustomer
+      ? formData
+      : { ...formData, customer_number: nextCustomerNumber };
+
     try {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submissionData),
       });
 
       if (res.ok) {
@@ -161,6 +169,7 @@ export default function CustomersPage() {
           setEditingCustomer(null);
           resetForm();
           fetchCustomers();
+          setNextCustomerNumber(Math.floor(10000000 + Math.random() * 90000000).toString());
         }, 1500);
       } else {
         const data = await res.json();
@@ -189,6 +198,7 @@ export default function CustomersPage() {
     });
     setPreviewUrl(null);
     setEditingCustomer(null);
+    setNextCustomerNumber(Math.floor(10000000 + Math.random() * 90000000).toString());
   };
 
   const handleEdit = (customer: Customer) => {
@@ -210,7 +220,7 @@ export default function CustomersPage() {
     setActiveTab('add');
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string | number) => {
     if (!confirm('Are you sure you want to delete this customer?')) return;
 
     try {
@@ -289,8 +299,8 @@ export default function CustomersPage() {
                 <input
                   type="text"
                   disabled
-                  value={editingCustomer?.customer_number || '18378992'}
-                  className="bg-gray-100 border border-gray-300 px-3 py-2 text-gray-600 focus:outline-none"
+                  value={editingCustomer?.customer_number || nextCustomerNumber}
+                  className="bg-gray-100 border border-gray-300 px-3 py-2 text-gray-700 font-bold focus:outline-none"
                 />
               </div>
               <div className="flex flex-col space-y-1">
@@ -510,7 +520,7 @@ export default function CustomersPage() {
                 <tbody className="divide-y divide-gray-100">
                   {filteredCustomers.map((c) => (
                     <tr key={c.customer_number} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-600">ID-{c.customer_number}</td>
+                      <td className="px-4 py-3 text-sm font-bold text-gray-700">{c.customer_number}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center space-x-3">
                           <div className="w-8 h-8 rounded bg-gray-100 flex-shrink-0 relative overflow-hidden">
@@ -566,3 +576,5 @@ export default function CustomersPage() {
     </div>
   );
 }
+
+
