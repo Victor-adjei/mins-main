@@ -81,7 +81,12 @@ export default function LedgerPage() {
     try {
       const res = await fetch(`/api/transaction-ledger?start_date=${startDate}&end_date=${endDate}`);
       const json = await res.json();
-      setData(json);
+      if (res.ok) {
+        setData(json);
+      } else {
+        console.error('Ledger API Error:', json.error);
+        setData(null);
+      }
     } catch (error) {
       console.error('Error fetching ledger:', error);
     } finally {
@@ -170,7 +175,7 @@ export default function LedgerPage() {
             </div>
             <h2 className="text-3xl font-black mt-3 flex items-baseline">
               <span className="text-lg mr-1 opacity-70">GHS</span>
-              {data?.summary.totalDeposits.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {data?.summary?.totalDeposits?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}
             </h2>
           </div>
           <ArrowDownLeft className="absolute -right-4 -bottom-4 w-24 h-24 opacity-10 group-hover:scale-110 transition-transform duration-700" />
@@ -184,7 +189,7 @@ export default function LedgerPage() {
             </div>
             <h2 className="text-3xl font-black mt-3 flex items-baseline">
               <span className="text-lg mr-1 opacity-70">GHS</span>
-              {data?.summary.totalWithdrawals.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {data?.summary?.totalWithdrawals?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}
             </h2>
           </div>
           <ArrowUpRight className="absolute -right-4 -bottom-4 w-24 h-24 opacity-10 group-hover:scale-110 transition-transform duration-700" />
@@ -198,7 +203,7 @@ export default function LedgerPage() {
             </div>
             <h2 className="text-3xl font-black mt-3 flex items-baseline">
               <span className="text-lg mr-1 opacity-70">GHS</span>
-              {data?.summary.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {data?.summary?.netCashFlow?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}
             </h2>
           </div>
           <History className="absolute -right-4 -bottom-4 w-24 h-24 opacity-10 group-hover:scale-110 transition-transform duration-700" />

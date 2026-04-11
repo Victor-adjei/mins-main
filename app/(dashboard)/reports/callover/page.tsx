@@ -66,7 +66,12 @@ export default function CalloverReportPage() {
     try {
       const res = await fetch(`/api/transaction-ledger?start_date=${startDate}&end_date=${endDate}`);
       const json = await res.json();
-      setData(json);
+      if (res.ok) {
+        setData(json);
+      } else {
+        console.error('Callover API Error:', json.error);
+        setData(null);
+      }
     } catch (error) {
       console.error('Error fetching ledger:', error);
     } finally {
@@ -160,7 +165,7 @@ export default function CalloverReportPage() {
             </div>
             <h2 className="text-4xl font-black mt-4 flex items-baseline">
               <span className="text-xl mr-2 opacity-70 italic font-black">GHS</span>
-              {data?.summary.totalDeposits.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {data?.summary?.totalDeposits?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}
             </h2>
             <p className="text-[10px] font-bold text-white/60 mt-4 uppercase tracking-widest">Across {data?.transactions.filter(t => t.transaction_type === 'Deposit').length} unique transactions</p>
           </div>

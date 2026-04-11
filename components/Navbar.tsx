@@ -9,7 +9,7 @@ export default function Navbar() {
   const { toggleSidebar } = useSidebar();
 
   return (
-    <header className="h-20 bg-[#0066cc] flex items-center justify-between px-4 md:px-10 sticky top-0 z-30 shadow-xl border-b border-white/10">
+    <header className="h-20 bg-[#0066cc] flex items-center justify-between px-6 sticky top-0 z-30 shadow-xl border-b border-white/10">
       <div className="flex items-center space-x-6">
         <button 
           onClick={toggleSidebar}

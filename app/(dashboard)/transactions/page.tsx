@@ -115,7 +115,7 @@ export default function TransactionsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-8">
+          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6">
             <h2 className="text-xl font-bold text-slate-900 mb-8 flex items-center">
               <Plus className="w-5 h-5 mr-3 text-emerald-500" />
               New Transaction
@@ -231,7 +231,7 @@ export default function TransactionsPage() {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden group">
+          <div className="bg-slate-900 rounded-[2rem] p-6 text-white relative overflow-hidden group">
             <h3 className="text-lg font-bold mb-6 flex items-center relative z-10">
               <Search className="w-5 h-5 mr-3 text-emerald-400" />
               Account Snapshot
@@ -263,7 +263,7 @@ export default function TransactionsPage() {
             <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-emerald-500 rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-opacity"></div>
           </div>
 
-          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-8">
+          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6">
             <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center">
               <AlertCircle className="w-5 h-5 mr-3 text-amber-500" />
               Guidelines

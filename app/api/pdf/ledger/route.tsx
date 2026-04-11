@@ -18,14 +18,14 @@ export const GET = auth(async (req) => {
     let sql = `
       SELECT t.*, c.first_name, c.surname
       FROM transactions t
-      JOIN accounts a ON t.account_number = a.account_number
-      JOIN customers c ON a.customer = c.customer_number
+      JOIN accounts a ON t.account_number::TEXT = a.account_number::TEXT
+      JOIN customers c ON a.customer::TEXT = c.customer_number::TEXT
       WHERE CAST(t.transaction_date AS DATE) BETWEEN $1 AND $2
     `;
 
     if (isFieldOfficer) {
       sql += ` AND c.mobile_banker = $3`;
-      queryParams.push(req.auth.user.name);
+      queryParams.push(req.auth?.user?.name || '');
     }
 
     sql += ` ORDER BY t.transaction_date DESC`;

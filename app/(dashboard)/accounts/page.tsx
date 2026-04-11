@@ -281,7 +281,7 @@ export default function AccountsPage() {
         </button>
       </div>
 
-      <div className="p-8">
+      <div className="p-4">
         {activeTab === 'create' && (
           <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Banner */}
