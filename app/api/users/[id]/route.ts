@@ -4,15 +4,15 @@ import { auth } from '@/auth';
 import bcrypt from 'bcryptjs';
 
 // Update user (Admin only)
-export const PUT = async (req: Request, { params }: { params: { id: string } }) => {
+export const PUT = async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
   const session = await auth();
   if (!session || session.user.role !== 'Admin') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
+    const { id } = await params;
     const { role, password } = await req.json();
-    const id = params.id;
 
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -35,14 +35,15 @@ export const PUT = async (req: Request, { params }: { params: { id: string } }) 
 };
 
 // Delete user (Admin only)
-export const DELETE = async (req: Request, { params }: { params: { id: string } }) => {
+export const DELETE = async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
   const session = await auth();
   if (!session || session.user.role !== 'Admin') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    await query('DELETE FROM users WHERE user_number = $1', [params.id]);
+    const { id } = await params;
+    await query('DELETE FROM users WHERE user_number = $1', [id]);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('User Delete Error:', error);
