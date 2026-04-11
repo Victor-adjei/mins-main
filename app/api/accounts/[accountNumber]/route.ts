@@ -3,10 +3,10 @@ import { query } from '@/lib/db';
 import { auth } from '@/auth';
 
 // GET a specific account
-export const GET = auth(async (req, { params }) => {
+export const GET = auth(async (req, { params }: { params: Promise<{ accountNumber: string }> }) => {
   if (!req.auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   
-  const { accountNumber } = params;
+  const { accountNumber } = await params;
 
   try {
     const res = await query(`
@@ -36,10 +36,10 @@ export const GET = auth(async (req, { params }) => {
 });
 
 // DELETE an account
-export const DELETE = auth(async (req, { params }) => {
+export const DELETE = auth(async (req, { params }: { params: Promise<{ accountNumber: string }> }) => {
   if (!req.auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   
-  const { accountNumber } = params;
+  const { accountNumber } = await params;
 
   try {
     // Check if account has transactions (optional but recommended for safety)
@@ -62,10 +62,10 @@ export const DELETE = auth(async (req, { params }) => {
 });
 
 // PUT (Update) an account
-export const PUT = auth(async (req, { params }) => {
+export const PUT = auth(async (req, { params }: { params: Promise<{ accountNumber: string }> }) => {
   if (!req.auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   
-  const { accountNumber } = params;
+  const { accountNumber } = await params;
   const body = await req.json();
   const { account_type, initial_balance, mobile_banker, account_status } = body;
 
