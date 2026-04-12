@@ -449,7 +449,9 @@ export default function TransactionsPage() {
                                 </div>
                               ) : (
                                 <div className="flex items-center justify-end px-3">
-                                  <Clock className="w-5 h-5 text-slate-200" title="Locked (12h passed)" />
+                                  <span title="Locked (12h passed)">
+                                    <Clock className="w-5 h-5 text-slate-200" />
+                                  </span>
                                 </div>
                               )}
                             </td>

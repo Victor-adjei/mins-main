@@ -368,7 +368,9 @@ export default function LedgerPage() {
                       </div>
                     ) : (
                       <div className="flex items-center justify-end">
-                        <Clock className="w-4 h-4 text-slate-200" title="Locked (12h passed)" />
+                        <span title="Locked (12h passed)">
+                          <Clock className="w-4 h-4 text-slate-200" />
+                        </span>
                       </div>
                     )}
                   </td>
