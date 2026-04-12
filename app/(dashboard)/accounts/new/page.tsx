@@ -24,18 +24,18 @@ function cn(...inputs: ClassValue[]) {
 }
 
 interface Customer {
-  customer_number: number;
+  customer_number: string;
   first_name: string;
   surname: string;
 }
 
 interface AccountType {
-  account_type_number: number;
+  account_type_number: string;
   account_type_name: string;
 }
 
 interface AccountStatus {
-  account_status_number: number;
+  account_status_number: string;
   account_status_name: string;
 }
 
@@ -57,7 +57,6 @@ export default function OpenAccountPage() {
     customer_id: '',
     account_type_id: '',
     account_status_id: '',
-    initial_balance: '0'
   });
 
   useEffect(() => {
@@ -121,10 +120,10 @@ export default function OpenAccountPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customer_id: parseInt(formData.customer_id),
-          account_type_id: parseInt(formData.account_type_id),
-          account_status_id: parseInt(formData.account_status_id),
-          initial_balance: parseFloat(formData.initial_balance)
+          customer_id: formData.customer_id,
+          account_type_id: formData.account_type_id,
+          account_status_id: formData.account_status_id,
+          initial_balance: 0
         }),
       });
 
@@ -296,22 +295,6 @@ export default function OpenAccountPage() {
                     </select>
                   </div>
 
-                  <div className="col-span-full space-y-2 mt-4">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Initial Deposit (GHS)</label>
-                    <div className="relative">
-                      <CreditCard className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 w-5 h-5" />
-                      <input 
-                        type="number" 
-                        name="initial_balance"
-                        value={formData.initial_balance}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        placeholder="0.00"
-                        className="w-full pl-14 pr-6 py-4 bg-slate-50 border-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white rounded-2xl text-sm font-bold transition-all outline-none text-slate-900" 
-                      />
-                    </div>
-                    <p className="text-[10px] text-slate-400 font-medium ml-2 uppercase tracking-widest">Optional: The account will be created with this balance.</p>
-                  </div>
                 </div>
               </div>
 

@@ -11,8 +11,8 @@ export const GET = auth(async (req) => {
         SELECT 
           (SELECT COUNT(*) FROM customers) as total_customers,
           (SELECT COUNT(*) FROM accounts) as total_accounts,
-          (SELECT SUM(amount) FROM transactions WHERE transaction_type = 'Deposit') as total_deposits,
-          (SELECT SUM(amount) FROM transactions WHERE transaction_type = 'Withdrawal') as total_withdrawals,
+          (SELECT SUM(amount) FROM transactions WHERE transaction_type = 'Deposit' AND voided = false) as total_deposits,
+          (SELECT SUM(amount) FROM transactions WHERE transaction_type = 'Withdrawal' AND voided = false) as total_withdrawals,
           (SELECT SUM(loan_amount) FROM loans) as total_loans
       `),
       query(`

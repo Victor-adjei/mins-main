@@ -1,0 +1,102 @@
+[
+  {
+    "table_name": "account_status",
+    "column_name": "account_status_name",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "account_status",
+    "column_name": "account_status_number",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "account_type",
+    "column_name": "account_type_name",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "account_type",
+    "column_name": "account_type_number",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "accounts",
+    "column_name": "account_id",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "accounts",
+    "column_name": "account_number",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "accounts",
+    "column_name": "account_status",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "accounts",
+    "column_name": "account_type",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "accounts",
+    "column_name": "customer",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "customer_type",
+    "column_name": "customer_type_name",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "customer_type",
+    "column_name": "customer_type_number",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "customers",
+    "column_name": "customer_id",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "customers",
+    "column_name": "customer_number",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "customers",
+    "column_name": "customer_type",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "customers",
+    "column_name": "ghana_card_number",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "customers",
+    "column_name": "phone_number",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "loans",
+    "column_name": "customer_number",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "loans",
+    "column_name": "loan_number",
+    "data_type": "character varying"
+  },
+  {
+    "table_name": "transactions",
+    "column_name": "account_number",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "users",
+    "column_name": "user_number",
+    "data_type": "integer"
+  }
+]

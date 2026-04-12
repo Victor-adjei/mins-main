@@ -10,6 +10,7 @@ export const GET = auth(async (req) => {
       FROM transactions t
       JOIN accounts a ON t.account_number = a.account_number
       JOIN customers c ON a.customer = c.customer_number
+      WHERE t.voided = false
       ORDER BY t.transaction_date DESC
     `);
     return NextResponse.json(res.rows);

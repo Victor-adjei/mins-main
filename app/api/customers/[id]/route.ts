@@ -10,7 +10,7 @@ export const GET = auth(async (req, { params }) => {
   const { id } = await params as { id: string };
 
   try {
-    const res = await query('SELECT * FROM customers WHERE customer_number::VARCHAR = $1::VARCHAR', [id]);
+    const res = await query('SELECT * FROM customers WHERE customer_number = $1', [id]);
     if (res.rows.length === 0) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
@@ -57,7 +57,7 @@ export const PUT = auth(async (req, { params }) => {
           mobile_banker = $9, 
           passport_photo = $10,
           customer_type = $11
-      WHERE customer_number::VARCHAR = $12::VARCHAR
+      WHERE customer_number = $12
       RETURNING *
     `, [
       first_name, middle_name, surname, gender, date_of_birth,
@@ -84,7 +84,7 @@ export const DELETE = auth(async (req, { params }) => {
   const { id } = await params as { id: string };
 
   try {
-    const res = await query('DELETE FROM customers WHERE customer_number::VARCHAR = $1::VARCHAR RETURNING *', [id]);
+    const res = await query('DELETE FROM customers WHERE customer_number = $1 RETURNING *', [id]);
     if (res.rows.length === 0) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }

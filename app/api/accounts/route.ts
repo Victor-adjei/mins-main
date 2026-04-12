@@ -16,7 +16,7 @@ export const GET = async (req: Request) => {
     let params: any[] = [];
 
     if (accountNumber) {
-      whereClause = 'WHERE a.account_number::text = $1';
+      whereClause = 'WHERE a.account_number = $1';
       params = [accountNumber];
     }
 
@@ -29,7 +29,7 @@ export const GET = async (req: Request) => {
         as_status.account_status_name
       FROM accounts a
       JOIN customers c ON a.customer = c.customer_number
-      LEFT JOIN customer_type ct ON c.customer_type::VARCHAR = ct.customer_type_number::VARCHAR
+      LEFT JOIN customer_type ct ON c.customer_type = ct.customer_type_number
       LEFT JOIN account_type at ON a.account_type = at.account_type_number
       LEFT JOIN account_status as_status ON a.account_status = as_status.account_status_number
       ${whereClause}
@@ -49,8 +49,8 @@ export const POST = auth(async (req) => {
   if (!req.auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const { 
-      customer_number,
-      account_type, 
+      customer_id,
+      account_type_id, 
       initial_balance,
       mobile_banker,
       account_number
@@ -67,7 +67,7 @@ export const POST = auth(async (req) => {
       )
       VALUES ($1, $2, $3, $4, 1, $5)
       RETURNING *
-    `, [customer_number, account_type, account_number, initial_balance || 0, mobile_banker]);
+    `, [customer_id, account_type_id, account_number, initial_balance || 0, mobile_banker]);
     
     return NextResponse.json(res.rows[0]);
   } catch (error: any) {

@@ -9,13 +9,13 @@ async function inspectSchema() {
   });
 
   try {
-    console.log('--- Inspecting Schema for account_number columns ---');
+    console.log('--- Inspecting all account_number columns ---');
     
     const res = await pool.query(`
       SELECT table_name, column_name, data_type 
       FROM information_schema.columns 
-      WHERE column_name LIKE '%account_number%'
-      OR table_name IN ('accounts', 'transactions', 'ledger');
+      WHERE column_name = 'account_number'
+      ORDER BY table_name;
     `);
     
     console.table(res.rows);

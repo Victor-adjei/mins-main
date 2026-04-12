@@ -22,7 +22,7 @@ interface FinancialStats {
 }
 
 interface AccountItem {
-  account_number: number;
+  account_number: string;
   first_name: string;
   surname: string;
   balance: string;
@@ -38,8 +38,12 @@ export default function FinancialSummaryPage() {
       try {
         const res = await fetch('/api/financial-summary');
         const data = await res.json();
-        setStats(data.summary);
-        setAccounts(data.accounts);
+        if (res.ok) {
+          setStats(data.summary);
+          setAccounts(data.accounts || []);
+        } else {
+          console.error('Financial Summary API Error:', data.error);
+        }
       } catch (error) {
         console.error('Error fetching financial summary:', error);
       } finally {
@@ -139,7 +143,7 @@ export default function FinancialSummaryPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {accounts.map((acc, index) => (
+              {accounts && accounts.length > 0 ? accounts.map((acc, index) => (
                 <tr key={acc.account_number} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-8 py-5">
                     <div className={cn(
@@ -162,7 +166,13 @@ export default function FinancialSummaryPage() {
                     <span className="text-lg font-black text-emerald-600">{formatCurrency(parseFloat(acc.balance))}</span>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan={4} className="px-8 py-10 text-center text-slate-400 font-medium italic">
+                    No account data available
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

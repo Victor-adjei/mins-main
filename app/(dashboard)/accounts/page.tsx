@@ -76,7 +76,6 @@ export default function AccountsPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [formData, setFormData] = useState({
     account_type: '',
-    initial_balance: '',
     mobile_banker: '',
     account_status: 1
   });
@@ -131,7 +130,7 @@ export default function AccountsPage() {
       const payload = {
         customer_number: selectedCustomer?.customer_number || editingAccount?.customer_number,
         account_type: formData.account_type,
-        initial_balance: parseFloat(formData.initial_balance) || 0,
+        initial_balance: 0,
         mobile_banker: formData.mobile_banker,
         account_status: formData.account_status,
         account_number: editingAccount ? editingAccount.account_number : generatedAccountNumber
@@ -161,7 +160,7 @@ export default function AccountsPage() {
   };
 
   const resetForm = () => {
-    setFormData({ account_type: '', initial_balance: '', mobile_banker: '', account_status: 1 });
+    setFormData({ account_type: '', mobile_banker: '', account_status: 1 });
     setSelectedCustomer(null);
     setSearchCustomer('');
     setEditingAccount(null);
@@ -172,7 +171,6 @@ export default function AccountsPage() {
     setEditingAccount(account);
     setFormData({
       account_type: account.account_type.toString(),
-      initial_balance: account.balance.toString(),
       mobile_banker: account.mobile_banker || '',
       account_status: account.account_status || 1
     });
@@ -250,8 +248,8 @@ export default function AccountsPage() {
           onClick={() => { setActiveTab('create'); resetForm(); }}
           className={cn(
             "text-base font-black transition-all relative pb-2 px-6 py-2 rounded-t-xl",
-            activeTab === 'create' 
-              ? "bg-[#0066cc] text-white shadow-lg shadow-blue-500/20" 
+            activeTab === 'create'
+              ? "bg-[#0066cc] text-white shadow-lg shadow-blue-500/20"
               : "text-slate-400 hover:text-blue-600 hover:bg-blue-50"
           )}
         >
@@ -261,8 +259,8 @@ export default function AccountsPage() {
           onClick={() => setActiveTab('manage')}
           className={cn(
             "text-base font-black transition-all relative pb-2 px-6 py-2 rounded-t-xl",
-            activeTab === 'manage' 
-              ? "bg-[#00c58d] text-white shadow-lg shadow-emerald-500/20" 
+            activeTab === 'manage'
+              ? "bg-[#00c58d] text-white shadow-lg shadow-emerald-500/20"
               : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
           )}
         >
@@ -272,8 +270,8 @@ export default function AccountsPage() {
           onClick={() => setActiveTab('print')}
           className={cn(
             "text-base font-black transition-all relative pb-2 px-6 py-2 rounded-t-xl",
-            activeTab === 'print' 
-              ? "bg-slate-900 text-white shadow-lg shadow-slate-900/20" 
+            activeTab === 'print'
+              ? "bg-slate-900 text-white shadow-lg shadow-slate-900/20"
               : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
           )}
         >
@@ -395,27 +393,15 @@ export default function AccountsPage() {
                       </select>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                      <div>
-                        <label className="text-xs font-black text-slate-900 uppercase tracking-widest mb-2 block">Initial Balance (₵)</label>
-                        <input
-                          type="number"
-                          placeholder="0.00"
-                          value={formData.initial_balance}
-                          onChange={(e) => setFormData({ ...formData, initial_balance: e.target.value })}
-                          className="w-full p-4 bg-[#f0f9ff] border-2 border-slate-300 rounded-xl text-sm font-black text-slate-950 shadow-sm focus:ring-4 focus:ring-[#0066cc]/10 focus:bg-white focus:border-[#0066cc] outline-none transition-all placeholder:text-slate-400"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs font-black text-slate-900 uppercase tracking-widest mb-2 block">Name of Mobile Banker</label>
-                        <input
-                          type="text"
-                          placeholder="Enter banker name..."
-                          value={formData.mobile_banker}
-                          onChange={(e) => setFormData({ ...formData, mobile_banker: e.target.value })}
-                          className="w-full p-4 bg-[#f0f9ff] border-2 border-slate-300 rounded-xl text-sm font-black text-slate-950 shadow-sm focus:ring-4 focus:ring-[#0066cc]/10 focus:bg-white focus:border-[#0066cc] outline-none transition-all placeholder:text-slate-400"
-                        />
-                      </div>
+                    <div>
+                      <label className="text-xs font-black text-slate-900 uppercase tracking-widest mb-2 block">Name of Mobile Banker</label>
+                      <input
+                        type="text"
+                        placeholder="Enter banker name..."
+                        value={formData.mobile_banker}
+                        onChange={(e) => setFormData({ ...formData, mobile_banker: e.target.value })}
+                        className="w-full p-4 bg-[#f0f9ff] border-2 border-slate-300 rounded-xl text-sm font-black text-slate-950 shadow-sm focus:ring-4 focus:ring-[#0066cc]/10 focus:bg-white focus:border-[#0066cc] outline-none transition-all placeholder:text-slate-400"
+                      />
                     </div>
                   </div>
                 </div>
@@ -506,29 +492,29 @@ export default function AccountsPage() {
                           {new Date(account.created_at).toLocaleDateString('en-GB')}
                         </td>
                         <td className="px-5 py-6 text-right">
-                           <div className="flex items-center justify-end space-x-3">
-                              <button 
-                                onClick={() => handleEdit(account)}
-                                className="p-2 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all active:scale-90 shadow-sm border border-blue-100"
-                                title="Edit"
-                              >
-                                 <Pencil className="w-4 h-4" />
-                              </button>
-                              <button 
-                                onClick={() => handleDelete(account.account_number)}
-                                className="p-2 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all active:scale-90 shadow-sm border border-rose-100"
-                                title="Delete"
-                              >
-                                 <Trash2 className="w-4 h-4" />
-                              </button>
-                              <button 
-                                onClick={() => handlePrintSingle(account)}
-                                className="p-2 text-slate-600 hover:bg-slate-900 hover:text-white rounded-xl transition-all active:scale-90 shadow-sm border border-slate-100"
-                                title="Print"
-                              >
-                                 <Printer className="w-4 h-4" />
-                              </button>
-                           </div>
+                          <div className="flex items-center justify-end space-x-3">
+                            <button
+                              onClick={() => handleEdit(account)}
+                              className="p-2 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all active:scale-90 shadow-sm border border-blue-100"
+                              title="Edit"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(account.account_number)}
+                              className="p-2 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all active:scale-90 shadow-sm border border-rose-100"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handlePrintSingle(account)}
+                              className="p-2 text-slate-600 hover:bg-slate-900 hover:text-white rounded-xl transition-all active:scale-90 shadow-sm border border-slate-100"
+                              title="Print"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -585,6 +571,8 @@ export default function AccountsPage() {
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
 }
+
+
 
 
 

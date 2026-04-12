@@ -28,7 +28,7 @@ function cn(...inputs: ClassValue[]) {
 interface Transaction {
   transaction_id: number;
   transaction_date: string;
-  account_number: number;
+  account_number: string;
   transaction_type: 'Deposit' | 'Withdrawal';
   amount: string;
   description: string;

@@ -14,7 +14,11 @@ import {
   ChevronRight,
   TrendingDown,
   TrendingUp,
-  Wallet
+  Wallet,
+  Edit2,
+  Trash2,
+  AlertCircle,
+  Clock
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -26,6 +30,7 @@ import {
   ResponsiveContainer,
   Cell
 } from 'recharts';
+import { useSession } from 'next-auth/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -36,7 +41,7 @@ function cn(...inputs: ClassValue[]) {
 interface Transaction {
   transaction_id: number;
   transaction_date: string;
-  account_number: number;
+  account_number: string;
   transaction_type: 'Deposit' | 'Withdrawal';
   amount: string;
   description: string;
@@ -62,6 +67,17 @@ export default function LedgerPage() {
     summary: SummaryStats;
     chartData: ChartData[];
   } | null>(null);
+  
+  const { data: session } = useSession();
+  const isFieldOfficer = session?.user?.role === 'Field Officer';
+
+  // Modals state
+  const [editTransaction, setEditTransaction] = useState<any | null>(null);
+  const [voidTransaction, setVoidTransaction] = useState<any | null>(null);
+  const [voidReason, setVoidReason] = useState('');
+  const [editAmount, setEditAmount] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [modalLoading, setModalLoading] = useState(false);
 
   // Default to current month range
   const now = new Date();
@@ -289,6 +305,7 @@ export default function LedgerPage() {
                 <th className="px-8 py-5 border-b border-slate-50">Timestamp</th>
                 <th className="px-8 py-5 border-b border-slate-50">Member / Account</th>
                 <th className="px-8 py-5 border-b border-slate-50 text-right">Flow</th>
+                <th className="px-8 py-5 border-b border-slate-50 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -329,6 +346,32 @@ export default function LedgerPage() {
                       </span>
                     </div>
                   </td>
+                  <td className="px-8 py-5 text-right">
+                    {(!isFieldOfficer || (new Date().getTime() - new Date(t.transaction_date).getTime() < 12 * 60 * 60 * 1000)) ? (
+                      <div className="flex items-center justify-end space-x-2">
+                        <button 
+                          onClick={() => {
+                            setEditTransaction(t);
+                            setEditAmount(t.amount);
+                            setEditDescription(t.description || '');
+                          }}
+                          className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => setVoidTransaction(t)}
+                          className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-end">
+                        <Clock className="w-4 h-4 text-slate-200" title="Locked (12h passed)" />
+                      </div>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -345,6 +388,140 @@ export default function LedgerPage() {
           )}
         </div>
       </div>
+
+      {/* Void Confirmation Modal */}
+      {voidTransaction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-md p-10 shadow-2xl animate-in zoom-in duration-300">
+            <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mb-6">
+              <AlertCircle className="w-8 h-8" />
+            </div>
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight">Void Transaction?</h3>
+            <p className="text-slate-500 font-medium mt-2 leading-relaxed">
+              This will reverse the amount of <span className="font-bold text-rose-600">GHS {parseFloat(voidTransaction.amount).toLocaleString()}</span> from A/C #{voidTransaction.account_number}.
+            </p>
+            
+            <div className="mt-8 space-y-4">
+              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Cancellation Reason</label>
+              <textarea 
+                value={voidReason}
+                onChange={(e) => setVoidReason(e.target.value)}
+                placeholder="Why is this being removed? (Required)"
+                className="w-full px-5 py-4 bg-slate-50 border-none focus:ring-2 focus:ring-rose-500/20 rounded-2xl text-sm font-bold text-slate-900 placeholder:text-slate-400 outline-none transition-all h-24"
+              />
+            </div>
+
+            <div className="mt-10 grid grid-cols-2 gap-4">
+              <button 
+                onClick={() => { setVoidTransaction(null); setVoidReason(''); }}
+                className="py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold hover:bg-slate-200 transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                disabled={!voidReason || modalLoading}
+                onClick={async () => {
+                  setModalLoading(true);
+                  try {
+                    const res = await fetch(`/api/transactions/${voidTransaction.transaction_id}`, {
+                      method: 'DELETE',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ reason: voidReason })
+                    });
+                    if (res.ok) {
+                      setVoidTransaction(null);
+                      setVoidReason('');
+                      fetchLedger();
+                    } else {
+                      const d = await res.json();
+                      alert(d.error || 'Failed to void');
+                    }
+                  } catch (e) {
+                    alert('Network error');
+                  } finally {
+                    setModalLoading(false);
+                  }
+                }}
+                className="py-4 bg-rose-600 text-white rounded-2xl font-black shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all disabled:opacity-50"
+              >
+                {modalLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Confirm Void"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editTransaction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-md p-10 shadow-2xl animate-in zoom-in duration-300">
+            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
+              <Edit2 className="w-8 h-8" />
+            </div>
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight">Edit Amount</h3>
+            <p className="text-slate-500 font-medium mt-2 leading-relaxed italic">
+              Correcting entry for A/C #{editTransaction.account_number}
+            </p>
+            
+            <div className="mt-8 space-y-6">
+              <div>
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-2">New Amount (GHS)</label>
+                <input 
+                  type="number"
+                  step="0.01"
+                  value={editAmount}
+                  onChange={(e) => setEditAmount(e.target.value)}
+                  className="w-full px-5 py-5 bg-slate-50 border-none focus:ring-2 focus:ring-blue-500/20 rounded-2xl text-xl font-black text-slate-900 outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-2">Updated Description</label>
+                <textarea 
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full px-5 py-4 bg-slate-50 border-none focus:ring-2 focus:ring-blue-500/20 rounded-2xl text-sm font-bold text-slate-900 placeholder:text-slate-400 outline-none transition-all h-24"
+                />
+              </div>
+            </div>
+
+            <div className="mt-10 grid grid-cols-1 gap-4">
+              <button 
+                disabled={modalLoading}
+                onClick={async () => {
+                  setModalLoading(true);
+                  try {
+                    const res = await fetch(`/api/transactions/${editTransaction.transaction_id}`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ amount: parseFloat(editAmount), description: editDescription })
+                    });
+                    if (res.ok) {
+                      setEditTransaction(null);
+                      fetchLedger();
+                    } else {
+                      const d = await res.json();
+                      alert(d.error || 'Failed to update');
+                    }
+                  } catch (e) {
+                    alert('Network error');
+                  } finally {
+                    setModalLoading(false);
+                  }
+                }}
+                className="py-5 bg-slate-900 text-white rounded-2xl font-black shadow-xl hover:bg-slate-800 transition-all disabled:opacity-50"
+              >
+                {modalLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Save Changes"}
+              </button>
+              <button 
+                onClick={() => setEditTransaction(null)}
+                className="py-4 text-slate-400 font-bold hover:text-slate-600 transition-all"
+              >
+                Close Without Saving
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
