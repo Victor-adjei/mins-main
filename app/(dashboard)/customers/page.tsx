@@ -281,16 +281,16 @@ export default function CustomersPage() {
             </div>
 
             {success && (
-              <div className="mb-4 p-3 bg-green-100 text-green-700 rounded flex items-center">
-                <CheckCircle2 className="w-5 h-5 mr-2" />
-                <span>Customer {editingCustomer ? 'updated' : 'registered'} successfully!</span>
+              <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-xl flex items-center shadow-sm animate-in fade-in duration-300">
+                <CheckCircle2 className="w-5 h-5 mr-3 flex-shrink-0 text-emerald-500" />
+                <span className="font-bold text-sm uppercase tracking-tight">Customer {editingCustomer ? 'updated' : 'registered'} successfully!</span>
               </div>
             )}
 
             {error && (
-              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded flex items-center">
-                <AlertCircle className="w-5 h-5 mr-2" />
-                <span>{error}</span>
+              <div className="mb-6 p-4 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center shadow-sm animate-in shake duration-500">
+                <AlertCircle className="w-5 h-5 mr-3 flex-shrink-0 text-rose-500" />
+                <span className="font-bold text-sm uppercase tracking-tight text-rose-700">{error}</span>
               </div>
             )}
 

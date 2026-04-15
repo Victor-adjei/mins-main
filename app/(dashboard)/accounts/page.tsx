@@ -243,39 +243,36 @@ export default function AccountsPage() {
     <div className="bg-[#f8fafc] min-h-screen">
       {/* Tabs Header */}
       {/* Tabs Header */}
-      <div className="bg-white flex border-b border-slate-200 px-8 pt-8 pb-4 space-x-12">
+      <div className="flex h-12">
         <button
           onClick={() => { setActiveTab('create'); resetForm(); }}
           className={cn(
-            "text-base font-black transition-all relative pb-2 px-6 py-2 rounded-t-xl",
-            activeTab === 'create'
-              ? "bg-[#0066cc] text-white shadow-lg shadow-blue-500/20"
-              : "text-slate-400 hover:text-blue-600 hover:bg-blue-50"
+            "flex items-center space-x-2 px-6 font-semibold transition-colors",
+            activeTab === 'create' ? "bg-[#28a745] text-white" : "bg-[#343a40] text-gray-300 hover:text-white"
           )}
         >
-          Create New Account
+          <CreditCard className="w-4 h-4" />
+          <span>{editingAccount ? 'Edit Account' : 'Create New Account'}</span>
         </button>
         <button
           onClick={() => setActiveTab('manage')}
           className={cn(
-            "text-base font-black transition-all relative pb-2 px-6 py-2 rounded-t-xl",
-            activeTab === 'manage'
-              ? "bg-[#00c58d] text-white shadow-lg shadow-emerald-500/20"
-              : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+            "flex items-center space-x-2 px-6 font-semibold transition-colors",
+            activeTab === 'manage' ? "bg-[#28a745] text-white" : "bg-[#343a40] text-gray-300 hover:text-white"
           )}
         >
-          Manage Account
+          <Activity className="w-4 h-4" />
+          <span>Manage Account</span>
         </button>
         <button
           onClick={() => setActiveTab('print')}
           className={cn(
-            "text-base font-black transition-all relative pb-2 px-6 py-2 rounded-t-xl",
-            activeTab === 'print'
-              ? "bg-slate-900 text-white shadow-lg shadow-slate-900/20"
-              : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
+            "flex items-center space-x-2 px-6 font-semibold transition-colors",
+            activeTab === 'print' ? "bg-[#28a745] text-white" : "bg-[#343a40] text-gray-300 hover:text-white"
           )}
         >
-          Print all accounts
+          <Printer className="w-4 h-4" />
+          <span>Print All Accounts</span>
         </button>
       </div>
 
@@ -283,10 +280,11 @@ export default function AccountsPage() {
         {activeTab === 'create' && (
           <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Banner */}
-            <div className="bg-[#0066cc] text-white px-8 py-4 rounded-t-2xl shadow-lg">
-              <h2 className="text-sm font-black uppercase tracking-[0.2em]">
+            <div className="bg-[#28a745] text-white px-4 py-2 flex items-center mb-6">
+              <Plus className="w-4 h-4 mr-2" />
+              <span className="font-bold uppercase text-sm">
                 {editingAccount ? 'EDIT CUSTOMER ACCOUNT DETAILS' : 'CUSTOMER ACCOUNT OPENING FORM'}
-              </h2>
+              </span>
             </div>
 
             <div className="bg-white p-10 rounded-b-2xl shadow-xl border-x border-b border-slate-200">

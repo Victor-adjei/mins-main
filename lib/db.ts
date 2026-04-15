@@ -8,9 +8,16 @@ const pool = globalForPool.pool || new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
   max: 20, 
-  idleTimeoutMillis: 60000,
+  idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 30000,
+  allowExitOnIdle: true,
 });
+
+if (!globalForPool.pool) {
+  pool.on('error', (err, client) => {
+    console.error('Unexpected error on idle database client', err);
+  });
+}
 
 if (process.env.NODE_ENV !== 'production') globalForPool.pool = pool;
 

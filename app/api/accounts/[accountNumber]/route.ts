@@ -3,8 +3,9 @@ import { query } from '@/lib/db';
 import { auth } from '@/auth';
 
 // GET a specific account
-export const GET = auth(async (req, { params }: { params: Promise<{ accountNumber: string }> }) => {
-  if (!req.auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export const GET = async (req: Request, { params }: { params: Promise<{ accountNumber: string }> }) => {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   
   const { accountNumber } = await params;
 
@@ -17,7 +18,7 @@ export const GET = auth(async (req, { params }: { params: Promise<{ accountNumbe
         at.account_type_name,
         as_status.account_status_name
       FROM accounts a
-      JOIN customers c ON a.customer = c.customer_number
+      LEFT JOIN customers c ON a.customer = c.customer_number
       LEFT JOIN customer_type ct ON c.customer_type = ct.customer_type_number
       LEFT JOIN account_type at ON a.account_type = at.account_type_number
       LEFT JOIN account_status as_status ON a.account_status = as_status.account_status_number
@@ -33,19 +34,23 @@ export const GET = auth(async (req, { params }: { params: Promise<{ accountNumbe
     console.error('Account GET Error:', error);
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
-});
+};
 
 // DELETE an account
-export const DELETE = auth(async (req, { params }: { params: Promise<{ accountNumber: string }> }) => {
-  if (!req.auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export const DELETE = async (req: Request, { params }: { params: Promise<{ accountNumber: string }> }) => {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   
   const { accountNumber } = await params;
 
   try {
-    // Check if account has ACTIVE transactions
-    const txCheck = await query('SELECT count(*) FROM transactions WHERE account_number = $1 AND voided = false', [accountNumber]);
+    // Check if account has ANY transactions (even voided ones)
+    // Deleting an account with transactions violates data integrity and database constraints
+    const txCheck = await query('SELECT count(*) FROM transactions WHERE account_number = $1', [accountNumber]);
     if (parseInt(txCheck.rows[0].count) > 0) {
-      return NextResponse.json({ error: 'Cannot delete account with existing transactions' }, { status: 400 });
+      return NextResponse.json({ 
+        error: 'Cannot delete account with existing transactions. Please void them if necessary, but the account history must remain.' 
+      }, { status: 400 });
     }
 
     const res = await query('DELETE FROM accounts WHERE account_number = $1 RETURNING *', [accountNumber]);
@@ -59,11 +64,12 @@ export const DELETE = auth(async (req, { params }: { params: Promise<{ accountNu
     console.error('Account DELETE Error:', error);
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
-});
+};
 
 // PUT (Update) an account
-export const PUT = auth(async (req, { params }: { params: Promise<{ accountNumber: string }> }) => {
-  if (!req.auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export const PUT = async (req: Request, { params }: { params: Promise<{ accountNumber: string }> }) => {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   
   const { accountNumber } = await params;
   const body = await req.json();
@@ -90,4 +96,4 @@ export const PUT = auth(async (req, { params }: { params: Promise<{ accountNumbe
     console.error('Account PUT Error:', error);
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
-});
+};

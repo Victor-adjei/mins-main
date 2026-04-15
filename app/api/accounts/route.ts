@@ -28,7 +28,7 @@ export const GET = async (req: Request) => {
         at.account_type_name,
         as_status.account_status_name
       FROM accounts a
-      JOIN customers c ON a.customer = c.customer_number
+      LEFT JOIN customers c ON a.customer = c.customer_number
       LEFT JOIN customer_type ct ON c.customer_type = ct.customer_type_number
       LEFT JOIN account_type at ON a.account_type = at.account_type_number
       LEFT JOIN account_status as_status ON a.account_status = as_status.account_status_number
@@ -48,13 +48,31 @@ export const GET = async (req: Request) => {
 export const POST = auth(async (req) => {
   if (!req.auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
+    const body = await req.json();
     const { 
       customer_id,
+      customer_number,
       account_type_id, 
+      account_type,
       initial_balance,
       mobile_banker,
-      account_number
-    } = await req.json();
+      account_number,
+      account_status,
+      account_status_id
+    } = body;
+
+    // Support both naming conventions from different frontend pages
+    const final_customer = (customer_id || customer_number)?.toString();
+    const final_account_type = (account_type_id || account_type)?.toString();
+    const final_account_status = (account_status_id || account_status || "1").toString();
+    const final_account_number = (account_number || Math.floor(1000000000 + Math.random() * 9000000000)).toString();
+
+    if (!final_customer) {
+      return NextResponse.json({ error: 'Customer is required' }, { status: 400 });
+    }
+    if (!final_account_type) {
+      return NextResponse.json({ error: 'Account type is required' }, { status: 400 });
+    }
 
     const res = await query(`
       INSERT INTO accounts (
@@ -65,9 +83,16 @@ export const POST = auth(async (req) => {
         account_status,
         mobile_banker
       )
-      VALUES ($1, $2, $3, $4, 1, $5)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
-    `, [customer_id, account_type_id, account_number, initial_balance || 0, mobile_banker]);
+    `, [
+      final_customer, 
+      final_account_type, 
+      final_account_number, 
+      initial_balance || 0, 
+      final_account_status, 
+      mobile_banker
+    ]);
     
     return NextResponse.json(res.rows[0]);
   } catch (error: any) {
