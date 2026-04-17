@@ -226,13 +226,13 @@ export default function AccountsPage() {
       a.mobile_banker || 'N/A'
     ]);
 
-    const csvContent = "data:text/csv;charset=utf-8,"
-      + headers.join(",") + "\n"
+    const csvContent = headers.join(",") + "\n" 
       + rows.map(e => e.join(",")).join("\n");
-
-    const encodedUri = encodeURI(csvContent);
+      
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", url);
     link.setAttribute("download", `accounts_report_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
@@ -536,7 +536,7 @@ export default function AccountsPage() {
             <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase mb-4">Print & Export Reports</h2>
             <p className="text-slate-500 font-bold uppercase tracking-widest text-xs mb-12">Select your preferred format to export the accounts database</p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-10">
               <button
                 onClick={exportToCSV}
                 className="flex flex-col items-center justify-center p-10 bg-white border border-slate-200 rounded-[2.5rem] hover:border-[#00c58d] hover:shadow-2xl transition-all group"
@@ -548,14 +548,26 @@ export default function AccountsPage() {
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">CSV format for spreadsheets</p>
               </button>
 
+              <a
+                href="/api/pdf/accounts"
+                target="_blank"
+                className="flex flex-col items-center justify-center p-10 bg-white border border-slate-200 rounded-[2.5rem] hover:border-rose-500 hover:shadow-2xl transition-all group"
+              >
+                <div className="w-16 h-16 bg-rose-500/5 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <FileText className="w-8 h-8 text-rose-500" />
+                </div>
+                <h3 className="text-lg font-black text-slate-900 uppercase mb-2">Download PDF</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Formal Document Export</p>
+              </a>
+
               <button
                 onClick={() => window.print()}
                 className="flex flex-col items-center justify-center p-10 bg-white border border-slate-200 rounded-[2.5rem] hover:border-blue-500 hover:shadow-2xl transition-all group"
               >
                 <div className="w-16 h-16 bg-blue-500/5 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <FileText className="w-8 h-8 text-blue-500" />
+                  <Printer className="w-8 h-8 text-blue-500" />
                 </div>
-                <h3 className="text-lg font-black text-slate-900 uppercase mb-2">Print to PDF</h3>
+                <h3 className="text-lg font-black text-slate-900 uppercase mb-2">Browser Print</h3>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">System generated report view</p>
               </button>
             </div>

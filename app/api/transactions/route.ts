@@ -6,7 +6,7 @@ export const GET = auth(async (req) => {
   if (!req.auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const res = await query(`
-      SELECT t.*, c.first_name, c.surname
+      SELECT t.*, c.first_name, c.surname, a.balance as current_balance
       FROM transactions t
       JOIN accounts a ON t.account_number = a.account_number
       JOIN customers c ON a.customer = c.customer_number

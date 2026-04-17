@@ -68,6 +68,28 @@ export default function FinancialSummaryPage() {
     }).format(amount);
   };
 
+  const exportToCSV = () => {
+    const headers = ['Rank', 'Account Number', 'Member Name', 'Balance'];
+    const rows = accounts.map((acc, index) => [
+      index + 1,
+      acc.account_number,
+      `${acc.first_name} ${acc.surname}`,
+      acc.balance
+    ]);
+
+    const csvContent = headers.join(",") + "\n" 
+      + rows.map(e => e.join(",")).join("\n");
+      
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `financial_ranking_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
@@ -75,10 +97,16 @@ export default function FinancialSummaryPage() {
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Financial Summary</h1>
           <p className="text-slate-500 font-medium mt-1">Real-time overview of the organization's financial health.</p>
         </div>
-        <button className="flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all active:scale-95 shadow-lg shadow-emerald-500/20">
-          <FileDown className="w-5 h-5" />
-          <span>Export Reports</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button onClick={exportToCSV} className="flex items-center space-x-2 px-5 py-2.5 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-900 transition-all active:scale-95 shadow-lg shadow-slate-500/20">
+            <FileDown className="w-4 h-4" />
+            <span className="text-xs uppercase tracking-widest">Excel CSV</span>
+          </button>
+          <a href="/api/pdf/financial-summary" target="_blank" className="flex items-center space-x-2 px-5 py-2.5 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-all active:scale-95 shadow-lg shadow-rose-500/20">
+            <FileDown className="w-4 h-4" />
+            <span className="text-xs uppercase tracking-widest">PDF Report</span>
+          </a>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">

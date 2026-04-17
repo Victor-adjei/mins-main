@@ -24,6 +24,7 @@ interface Account {
   first_name: string;
   surname: string;
   balance: string | number;
+  account_rank: string | number;
 }
 
 export default function TransactionsPage() {
@@ -36,6 +37,7 @@ export default function TransactionsPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [fetchingRecent, setFetchingRecent] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Modals state
   const [editTransaction, setEditTransaction] = useState<any | null>(null);
@@ -300,20 +302,42 @@ export default function TransactionsPage() {
 
                   {selectedAccountDetails ? (
                     <div className="relative z-10">
-                      <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Available Balance</p>
-                      <p className="text-5xl font-black tracking-tighter mb-8 bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-                        ₵{Number(selectedAccountDetails.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </p>
-                      <div className="space-y-6">
-                        <div className="flex justify-between items-center py-4 border-b border-white/5">
+                      <div className="space-y-4 mb-6">
+                        <div className="flex justify-between items-center py-2 border-b border-white/5">
+                          <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Rank</span>
+                          <div className={cn(
+                            "w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold",
+                            Number(selectedAccountDetails.account_rank) === 1 ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" : 
+                            Number(selectedAccountDetails.account_rank) === 2 ? "bg-slate-300 text-slate-700 shadow-sm" :
+                            Number(selectedAccountDetails.account_rank) === 3 ? "bg-orange-300 text-orange-900 shadow-sm" :
+                            "bg-white/10 text-white"
+                          )}>
+                            {selectedAccountDetails.account_rank}
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b border-white/5">
                           <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Customer</span>
                           <span className="text-sm font-black">{selectedAccountDetails.first_name} {selectedAccountDetails.surname}</span>
                         </div>
-                        <div className="flex justify-between items-center py-4 border-b border-white/5">
+                        <div className="flex justify-between items-center py-2 border-b border-white/5">
                           <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Card ID</span>
                           <span className="text-sm font-black text-emerald-400">#{selectedAccountDetails.account_number}</span>
                         </div>
+                        <div className="flex justify-between items-center py-2 border-b border-white/5">
+                          <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Processing</span>
+                          <span className={cn(
+                            "text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
+                            type === 'Deposit' ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
+                          )}>
+                            {type === 'Withdrawal' ? 'Drawer' : type}
+                          </span>
+                        </div>
                       </div>
+
+                      <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2 mt-4">Calculated Total Balance</p>
+                      <p className="text-5xl font-black tracking-tighter mb-4 bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+                        ₵{Number(selectedAccountDetails.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </p>
                     </div>
                   ) : (
                     <div className="text-center py-12 relative z-10">
@@ -355,13 +379,25 @@ export default function TransactionsPage() {
                   <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">MANAGE TRANSACTIONS</h2>
                   <p className="text-sm font-bold text-slate-400 mt-1 uppercase tracking-widest">Audit trail and record correction</p>
                 </div>
-                <button 
-                  onClick={fetchRecentTransactions} 
-                  className="px-8 py-3 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-slate-800 transition-all shadow-lg active:scale-95 flex items-center space-x-3"
-                >
-                  <History className="w-3 h-3" />
-                  <span>Pull Latest Records</span>
-                </button>
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <div className="relative">
+                    <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input 
+                      type="text" 
+                      placeholder="Search accounts..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold tracking-widest text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all w-full sm:w-64 uppercase"
+                    />
+                  </div>
+                  <button 
+                    onClick={fetchRecentTransactions} 
+                    className="px-6 py-3 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-slate-800 transition-all shadow-lg active:scale-95 flex items-center space-x-3 w-full sm:w-auto justify-center"
+                  >
+                    <History className="w-3 h-3" />
+                    <span>Pull Latest</span>
+                  </button>
+                </div>
               </div>
               
               <div className="overflow-x-auto">
@@ -372,6 +408,7 @@ export default function TransactionsPage() {
                       <th className="px-8 py-6 text-[10px] font-black border-b border-slate-800">Member</th>
                       <th className="px-8 py-6 text-[10px] font-black border-b border-slate-800">Account</th>
                       <th className="px-8 py-6 text-[10px] font-black border-b border-slate-800">Flow</th>
+                      <th className="px-8 py-6 text-[10px] font-black border-b border-slate-800">Total Balance</th>
                       <th className="px-8 py-6 text-[10px] font-black border-b border-slate-800 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -379,12 +416,12 @@ export default function TransactionsPage() {
                     {fetchingRecent ? (
                       Array(5).fill(0).map((_, i) => (
                         <tr key={i} className="animate-pulse">
-                          <td colSpan={5} className="px-8 py-10"><div className="h-4 bg-slate-100 rounded w-full"></div></td>
+                          <td colSpan={6} className="px-8 py-10"><div className="h-4 bg-slate-100 rounded w-full"></div></td>
                         </tr>
                       ))
                     ) : recentTransactions.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-8 py-20 text-center">
+                        <td colSpan={6} className="px-8 py-20 text-center">
                           <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
                             <History className="w-8 h-8 text-slate-200" />
                           </div>
@@ -392,7 +429,9 @@ export default function TransactionsPage() {
                         </td>
                       </tr>
                     ) : (
-                      recentTransactions.map((tx) => {
+                      recentTransactions
+                        .filter(tx => tx.account_number.includes(searchQuery) || `${tx.first_name} ${tx.surname}`.toLowerCase().includes(searchQuery.toLowerCase()))
+                        .map((tx) => {
                         const canModify = !isFieldOfficer || (new Date().getTime() - new Date(tx.transaction_date).getTime() < 12 * 60 * 60 * 1000);
                         
                         return (
@@ -426,6 +465,9 @@ export default function TransactionsPage() {
                                   {tx.transaction_type}
                                 </span>
                               </div>
+                            </td>
+                            <td className="px-8 py-6 text-[13px] font-black text-slate-800 tracking-tighter">
+                              ₵{(tx.current_balance ? parseFloat(tx.current_balance) : 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </td>
                             <td className="px-8 py-6 text-right">
                               {canModify ? (

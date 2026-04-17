@@ -243,6 +243,36 @@ export default function CustomersPage() {
     c.customer_number.toString().includes(searchTerm)
   );
 
+  const exportToCSV = () => {
+    const headers = ['Customer Number', 'First Name', 'Middle Name', 'Surname', 'Gender', 'Date of Birth', 'Nationality', 'Phone Number', 'Ghana Card Number', 'Type', 'Mobile Banker', 'Date Registered'];
+    const rows = customers.map(c => [
+      c.customer_number,
+      c.first_name,
+      c.middle_name || '',
+      c.surname,
+      c.gender,
+      new Date(c.date_of_birth).toLocaleDateString(),
+      c.nationality,
+      c.phone_number,
+      c.ghana_card_number,
+      c.customer_type_name || 'Standard',
+      c.mobile_banker || '',
+      new Date(c.registration_date).toLocaleDateString()
+    ]);
+
+    const csvContent = headers.join(",") + "\n" 
+      + rows.map(e => e.join(",")).join("\n");
+      
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `customers_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="bg-white min-h-screen">
       {/* Tab Headers */}
@@ -501,10 +531,16 @@ export default function CustomersPage() {
                   className="w-full pl-10 pr-4 py-3 bg-[#f0f9ff] border-2 border-slate-300 rounded-xl text-sm font-black text-slate-950 focus:border-[#28a745] focus:bg-white focus:ring-4 focus:ring-[#28a745]/10 focus:outline-none transition-all placeholder:text-slate-500 shadow-inner"
                 />
               </div>
-              <button className="flex items-center space-x-2 px-4 py-2 bg-gray-100 border border-gray-300 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">
-                <Download className="w-4 h-4" />
-                <span>Export Data</span>
-              </button>
+              <div className="flex items-center space-x-3">
+                <button onClick={exportToCSV} className="flex items-center space-x-2 px-4 py-2 bg-gray-100 border border-gray-300 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">
+                  <Download className="w-4 h-4" />
+                  <span>Export CSV</span>
+                </button>
+                <a href="/api/pdf/customers" target="_blank" className="flex items-center space-x-2 px-4 py-2 bg-rose-50 border border-rose-200 text-rose-700 text-sm font-semibold hover:bg-rose-100 transition-colors">
+                  <Download className="w-4 h-4" />
+                  <span>Download PDF</span>
+                </a>
+              </div>
             </div>
 
             <div className="overflow-x-auto border border-gray-200">

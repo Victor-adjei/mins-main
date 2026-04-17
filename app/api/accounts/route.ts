@@ -26,7 +26,8 @@ export const GET = async (req: Request) => {
         c.first_name, c.surname, c.customer_type,
         ct.customer_type_name,
         at.account_type_name,
-        as_status.account_status_name
+        as_status.account_status_name,
+        (SELECT COUNT(*) + 1 FROM accounts a2 WHERE a2.balance > a.balance) as account_rank
       FROM accounts a
       LEFT JOIN customers c ON a.customer = c.customer_number
       LEFT JOIN customer_type ct ON c.customer_type = ct.customer_type_number
