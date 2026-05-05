@@ -25,7 +25,7 @@ export const GET = auth(async (req) => {
     `;
 
     if (isFieldOfficer) {
-      sql += ` AND c.mobile_banker = $3`;
+      sql += ` AND t.performed_by = $3`;
       queryParams.push(req.auth?.user?.name || '');
     }
 

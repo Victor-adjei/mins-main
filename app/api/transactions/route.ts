@@ -70,8 +70,8 @@ export const POST = auth(async (req) => {
 
     // 3. Record transaction
     const transRes = await client.query(
-      'INSERT INTO transactions (account_number, transaction_type, amount, description) VALUES ($1, $2, $3, $4) RETURNING *',
-      [account_number, transaction_type, amount, description]
+      'INSERT INTO transactions (account_number, transaction_type, amount, description, performed_by) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [account_number, transaction_type, amount, description, req.auth?.user?.name || 'Unknown']
     );
 
     await client.query('COMMIT');
