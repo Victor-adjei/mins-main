@@ -140,7 +140,10 @@ export const PUT = auth(async (req, { params }: { params: Promise<{ id: string }
     if (trans.transaction_type === 'Deposit') {
       newBalance = Math.max(0, currentBalance + diff);
     } else if (trans.transaction_type === 'Withdrawal') {
-      newBalance = Math.max(0, currentBalance - diff);
+      newBalance = currentBalance - diff;
+      if (newBalance < 0) {
+        throw new Error('Insufficient balance: updating this withdrawal would result in a negative account balance.');
+      }
     }
 
     // 4. Update Account

@@ -6,12 +6,23 @@ export const GET = auth(async (req) => {
   if (!req.auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const res = await query(`
-      SELECT t.*, c.first_name, c.surname, a.balance as current_balance
+      SELECT 
+        t.*, 
+        c.first_name, 
+        c.surname, 
+        (a.balance - COALESCE(
+          SUM(CASE WHEN t.transaction_type = 'Deposit' THEN t.amount ELSE -t.amount END) 
+            OVER (
+              PARTITION BY t.account_number 
+              ORDER BY t.transaction_date DESC, t.transaction_id DESC 
+              ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+            ), 0
+        )) as current_balance
       FROM transactions t
       JOIN accounts a ON t.account_number = a.account_number
       JOIN customers c ON a.customer = c.customer_number
       WHERE t.voided = false
-      ORDER BY t.transaction_date DESC
+      ORDER BY t.transaction_date DESC, t.transaction_id DESC
     `);
     return NextResponse.json(res.rows);
   } catch (error) {
