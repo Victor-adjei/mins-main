@@ -42,8 +42,14 @@ export default function LoginPage() {
       <div className="max-w-md w-full bg-white rounded-[2rem] shadow-2xl overflow-hidden border border-slate-200">
         <div className="p-10">
           <div className="flex justify-center mb-8">
-            <div className="w-20 h-20 bg-[#00c58d] rounded-2xl flex items-center justify-center text-white text-3xl font-black shadow-lg shadow-[#00c58d]/20">
-              E
+            <div className="relative w-24 h-24">
+              <Image 
+                src="/logo.png" 
+                alt="Eye Adom Logo" 
+                fill 
+                className="object-contain"
+                priority
+              />
             </div>
           </div>
           
