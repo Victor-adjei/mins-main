@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
@@ -68,8 +69,14 @@ export default function Sidebar() {
         {/* Brand Header */}
         <div className="p-6 flex items-center justify-between border-b border-white/5 bg-[#0b1727] sticky top-0 z-10 h-20">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-[#00c58d] flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-[#00c58d]/20">
-              E
+            <div className="relative w-12 h-12 flex-shrink-0">
+              <Image 
+                src="/logo.png" 
+                alt="Eye Adom Logo" 
+                fill 
+                className="object-contain"
+                priority
+              />
             </div>
             <div className="flex flex-col">
               <h2 className="font-black text-lg text-white leading-none tracking-tight">EYE ADOM</h2>
