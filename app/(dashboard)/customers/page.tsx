@@ -38,6 +38,8 @@ interface Customer {
   registration_date: string;
   customer_type: string | number;
   customer_type_name?: string;
+  next_of_kin?: string;
+  next_of_kin_phone?: string;
 }
 
 interface CustomerType {
@@ -71,7 +73,9 @@ export default function CustomersPage() {
     mobile_banker: '',
     customer_type: '',
     passport_photo: '',
-    customer_number: ''
+    customer_number: '',
+    next_of_kin: '',
+    next_of_kin_phone: ''
   });
 
   const [nextCustomerNumber, setNextCustomerNumber] = useState('');
@@ -203,7 +207,9 @@ export default function CustomersPage() {
       mobile_banker: '',
       customer_type: customerTypes[0]?.customer_type_number.toString() || '',
       passport_photo: '',
-      customer_number: nextCustomerNumber
+      customer_number: nextCustomerNumber,
+      next_of_kin: '',
+      next_of_kin_phone: ''
     });
     setPreviewUrl(null);
     setEditingCustomer(null);
@@ -224,7 +230,9 @@ export default function CustomersPage() {
       mobile_banker: customer.mobile_banker || '',
       customer_type: customer.customer_type?.toString() || '',
       passport_photo: customer.passport_photo || '',
-      customer_number: customer.customer_number || ''
+      customer_number: customer.customer_number || '',
+      next_of_kin: customer.next_of_kin || '',
+      next_of_kin_phone: customer.next_of_kin_phone || ''
     });
     setPreviewUrl(customer.passport_photo || null);
     setActiveTab('add');
@@ -462,6 +470,28 @@ export default function CustomersPage() {
                   type="text"
                   name="mobile_banker"
                   value={formData.mobile_banker}
+                  onChange={handleInputChange}
+                  className="bg-[#f0f9ff] border-2 border-slate-300 px-3 py-2 rounded-lg text-sm font-black text-slate-950 focus:border-[#28a745] focus:bg-white focus:ring-4 focus:ring-[#28a745]/10 focus:outline-none transition-all placeholder:text-slate-400"
+                />
+              </div>
+
+              {/* Row 6 - Next of Kin */}
+              <div className="flex flex-col space-y-1">
+                <label className="text-sm font-bold text-gray-700 uppercase tracking-tight">Next of Kin</label>
+                <input
+                  type="text"
+                  name="next_of_kin"
+                  value={formData.next_of_kin}
+                  onChange={handleInputChange}
+                  className="bg-[#f0f9ff] border-2 border-slate-300 px-3 py-2 rounded-lg text-sm font-black text-slate-950 focus:border-[#28a745] focus:bg-white focus:ring-4 focus:ring-[#28a745]/10 focus:outline-none transition-all placeholder:text-slate-400"
+                />
+              </div>
+              <div className="flex flex-col space-y-1">
+                <label className="text-sm font-bold text-gray-700 uppercase tracking-tight">Next of Kin Phone</label>
+                <input
+                  type="tel"
+                  name="next_of_kin_phone"
+                  value={formData.next_of_kin_phone}
                   onChange={handleInputChange}
                   className="bg-[#f0f9ff] border-2 border-slate-300 px-3 py-2 rounded-lg text-sm font-black text-slate-950 focus:border-[#28a745] focus:bg-white focus:ring-4 focus:ring-[#28a745]/10 focus:outline-none transition-all placeholder:text-slate-400"
                 />

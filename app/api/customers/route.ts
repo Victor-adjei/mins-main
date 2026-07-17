@@ -45,15 +45,18 @@ export const POST = auth(async (req) => {
       mobile_banker, 
       passport_photo,
       customer_type,
-      customer_number
+      customer_number,
+      next_of_kin,
+      next_of_kin_phone
     } = body;
 
     const res = await query(`
       INSERT INTO customers (
         first_name, middle_name, surname, gender, date_of_birth,
         nationality, phone_number, ghana_card_number, 
-        mobile_banker, passport_photo, customer_type, customer_number
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        mobile_banker, passport_photo, customer_type, customer_number,
+        next_of_kin, next_of_kin_phone
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *
     `, [
       first_name || null,
@@ -67,7 +70,9 @@ export const POST = auth(async (req) => {
       mobile_banker || null,
       passport_photo || null,
       customer_type || null,
-      customer_number || Math.floor(10000000 + Math.random() * 90000000).toString()
+      customer_number || Math.floor(10000000 + Math.random() * 90000000).toString(),
+      next_of_kin || null,
+      next_of_kin_phone || null
     ]);
 
     return NextResponse.json(res.rows[0]);

@@ -41,7 +41,9 @@ export const PUT = auth(async (req, { params }) => {
       ghana_card_number, 
       mobile_banker, 
       passport_photo,
-      customer_type
+      customer_type,
+      next_of_kin,
+      next_of_kin_phone
     } = body;
 
     const res = await query(`
@@ -56,13 +58,15 @@ export const PUT = auth(async (req, { params }) => {
           ghana_card_number = $8, 
           mobile_banker = $9, 
           passport_photo = $10,
-          customer_type = $11
-      WHERE customer_number = $12
+          customer_type = $11,
+          next_of_kin = $12,
+          next_of_kin_phone = $13
+      WHERE customer_number = $14
       RETURNING *
     `, [
       first_name, middle_name, surname, gender, date_of_birth,
       nationality, phone_number, ghana_card_number, 
-      mobile_banker, passport_photo, customer_type, id
+      mobile_banker, passport_photo, customer_type, next_of_kin, next_of_kin_phone, id
     ]);
 
     if (res.rows.length === 0) {
