@@ -127,6 +127,7 @@ export default function CustomersPage() {
     setPreviewUrl(url);
 
     setSubmitting(true);
+    setError(null);
     try {
       const uploadFormData = new FormData();
       uploadFormData.append('file', file);
@@ -134,9 +135,16 @@ export default function CustomersPage() {
       const data = await res.json();
       if (res.ok && data.url) {
         setFormData(prev => ({ ...prev, passport_photo: data.url }));
+      } else {
+        setError(data.error || 'Failed to upload photo to storage.');
+        setPreviewUrl(null);
+        setFormData(prev => ({ ...prev, passport_photo: '' }));
       }
     } catch (err) {
       console.error('Upload error:', err);
+      setError('Network error during photo upload.');
+      setPreviewUrl(null);
+      setFormData(prev => ({ ...prev, passport_photo: '' }));
     } finally {
       setSubmitting(false);
     }
@@ -548,6 +556,7 @@ export default function CustomersPage() {
                 <thead>
                   <tr className="bg-gray-800 text-white">
                     <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider">Number</th>
+                    <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider">Photo</th>
                     <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider">Name</th>
                     <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider">Phone</th>
                     <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider">Type</th>
@@ -560,19 +569,17 @@ export default function CustomersPage() {
                     <tr key={c.customer_number} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 text-sm font-bold text-gray-700">{c.customer_number}</td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 rounded bg-gray-100 flex-shrink-0 relative overflow-hidden">
-                            {c.passport_photo ? (
-                              <Image src={c.passport_photo} alt="" fill className="object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-400 uppercase">
-                                {c.first_name[0]}{c.surname[0]}
-                              </div>
-                            )}
-                          </div>
-                          <span className="text-sm font-bold text-gray-800">{c.first_name} {c.surname}</span>
+                        <div className="w-10 h-10 rounded-full border-2 border-slate-200 bg-slate-100 flex-shrink-0 relative overflow-hidden shadow-sm flex items-center justify-center">
+                          {c.passport_photo ? (
+                            <Image src={c.passport_photo} alt="" fill className="object-cover" />
+                          ) : (
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                              {(c.first_name?.[0] || '') + (c.surname?.[0] || '')}
+                            </span>
+                          )}
                         </div>
                       </td>
+                      <td className="px-4 py-3 text-sm font-bold text-slate-800">{c.first_name} {c.surname}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{c.phone_number}</td>
                       <td className="px-4 py-3">
                         <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded text-[10px] font-bold uppercase">
