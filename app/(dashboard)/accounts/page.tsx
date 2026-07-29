@@ -49,11 +49,17 @@ interface AccountType {
   account_type_name: string;
 }
 
+interface AccountStatus {
+  account_status_number: number | string;
+  account_status_name: string;
+}
+
 export default function AccountsPage() {
   const [activeTab, setActiveTab] = useState<'create' | 'manage' | 'print'>('create');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [accountTypes, setAccountTypes] = useState<AccountType[]>([]);
+  const [accountStatuses, setAccountStatuses] = useState<AccountStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,21 +93,24 @@ export default function AccountsPage() {
   async function fetchData() {
     try {
       setLoading(true);
-      const [accRes, custRes, typeRes] = await Promise.all([
+      const [accRes, custRes, typeRes, statusRes] = await Promise.all([
         fetch('/api/accounts'),
         fetch('/api/customers'),
-        fetch('/api/account-types')
+        fetch('/api/account-types'),
+        fetch('/api/account-status')
       ]);
 
-      const [accData, custData, typeData] = await Promise.all([
+      const [accData, custData, typeData, statusData] = await Promise.all([
         accRes.json(),
         custRes.json(),
-        typeRes.json()
+        typeRes.json(),
+        statusRes.json()
       ]);
 
       if (Array.isArray(accData)) setAccounts(accData);
       if (Array.isArray(custData)) setCustomers(custData);
       if (Array.isArray(typeData)) setAccountTypes(typeData);
+      if (Array.isArray(statusData)) setAccountStatuses(statusData);
     } catch (err) {
       console.error('Fetch error:', err);
       setError('Failed to load data.');
@@ -401,6 +410,23 @@ export default function AccountsPage() {
                         className="w-full p-4 bg-[#f0f9ff] border-2 border-slate-300 rounded-xl text-sm font-black text-slate-950 shadow-sm focus:ring-4 focus:ring-[#0066cc]/10 focus:bg-white focus:border-[#0066cc] outline-none transition-all placeholder:text-slate-400"
                       />
                     </div>
+                    
+                    {editingAccount && (
+                      <div>
+                        <label className="text-xs font-black text-slate-900 uppercase tracking-widest mb-2 block">Account Status</label>
+                        <select
+                          value={formData.account_status}
+                          onChange={(e) => setFormData({ ...formData, account_status: Number(e.target.value) })}
+                          className="w-full p-4 bg-[#f0f9ff] border-2 border-slate-300 rounded-xl text-sm font-black text-slate-950 shadow-sm focus:ring-4 focus:ring-[#0066cc]/10 focus:bg-white focus:border-[#0066cc] outline-none appearance-none transition-all"
+                        >
+                          {accountStatuses.map(status => (
+                            <option key={status.account_status_number} value={status.account_status_number}>
+                              {status.account_status_name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
                 </div>
 
