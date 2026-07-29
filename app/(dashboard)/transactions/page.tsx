@@ -26,6 +26,7 @@ interface Account {
   surname: string;
   balance: string | number;
   account_rank: string | number;
+  account_status_name?: string;
 }
 
 export default function TransactionsPage() {
@@ -224,6 +225,13 @@ export default function TransactionsPage() {
                         <span className="text-sm font-bold">{message.text}</span>
                       </div>
                     )}
+                    
+                    {selectedAccountDetails && selectedAccountDetails.account_status_name !== 'Active' && (
+                      <div className="p-4 rounded-2xl border flex items-center space-x-3 mb-6 animate-in slide-in-from-top-2 bg-amber-50 border-amber-100 text-amber-700">
+                        <AlertCircle className="w-5 h-5" />
+                        <span className="text-sm font-bold">This account is {selectedAccountDetails.account_status_name || 'Inactive'}. Transactions are not allowed.</span>
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div>
@@ -305,11 +313,11 @@ export default function TransactionsPage() {
 
                     <button
                       type="submit"
-                      disabled={loading}
+                      disabled={loading || (selectedAccountDetails && selectedAccountDetails.account_status_name !== 'Active')}
                       className={cn(
                         "w-full py-6 rounded-2xl text-white font-black text-base uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl flex items-center justify-center space-x-4",
                         type === 'Deposit' ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20" : "bg-rose-600 hover:bg-rose-700 shadow-rose-500/20",
-                        loading && "opacity-70 pointer-events-none"
+                        (loading || (selectedAccountDetails && selectedAccountDetails.account_status_name !== 'Active')) && "opacity-70 pointer-events-none"
                       )}
                     >
                       {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : (
@@ -361,6 +369,15 @@ export default function TransactionsPage() {
                             type === 'Deposit' ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
                           )}>
                             {type === 'Withdrawal' ? 'Drawer' : type}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b border-white/5">
+                          <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Status</span>
+                          <span className={cn(
+                            "text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
+                            selectedAccountDetails.account_status_name === 'Active' ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
+                          )}>
+                            {selectedAccountDetails.account_status_name || 'Active'}
                           </span>
                         </div>
                       </div>

@@ -46,12 +46,20 @@ export const POST = auth(async (req) => {
 
     // 1. Fetch current balance with row-level lock
     const accountRes = await client.query(
-      'SELECT balance FROM accounts WHERE account_number = $1 FOR UPDATE',
+      `SELECT a.balance, ast.account_status_name 
+       FROM accounts a 
+       LEFT JOIN account_status ast ON a.account_status::VARCHAR = ast.account_status_number::VARCHAR 
+       WHERE a.account_number = $1 FOR UPDATE`,
       [account_number]
     );
 
     if (accountRes.rows.length === 0) {
       throw new Error('Account not found');
+    }
+
+    const accountStatus = accountRes.rows[0].account_status_name;
+    if (accountStatus !== 'Active') {
+      throw new Error(`Cannot process transaction: Account is ${accountStatus || 'Inactive'}`);
     }
 
     const currentBalance = parseFloat(accountRes.rows[0].balance);
