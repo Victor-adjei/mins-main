@@ -49,7 +49,7 @@ export const POST = auth(async (req) => {
       `SELECT a.balance, ast.account_status_name 
        FROM accounts a 
        LEFT JOIN account_status ast ON a.account_status::VARCHAR = ast.account_status_number::VARCHAR 
-       WHERE a.account_number = $1 FOR UPDATE`,
+       WHERE a.account_number = $1 FOR UPDATE OF a`,
       [account_number]
     );
 
