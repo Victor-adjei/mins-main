@@ -313,11 +313,11 @@ export default function TransactionsPage() {
 
                     <button
                       type="submit"
-                      disabled={loading || (selectedAccountDetails && selectedAccountDetails.account_status_name !== 'Active')}
+                      disabled={loading || Boolean(selectedAccountDetails && selectedAccountDetails.account_status_name !== 'Active')}
                       className={cn(
                         "w-full py-6 rounded-2xl text-white font-black text-base uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl flex items-center justify-center space-x-4",
                         type === 'Deposit' ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20" : "bg-rose-600 hover:bg-rose-700 shadow-rose-500/20",
-                        (loading || (selectedAccountDetails && selectedAccountDetails.account_status_name !== 'Active')) && "opacity-70 pointer-events-none"
+                        (loading || Boolean(selectedAccountDetails && selectedAccountDetails.account_status_name !== 'Active')) && "opacity-70 pointer-events-none"
                       )}
                     >
                       {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : (
