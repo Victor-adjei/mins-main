@@ -45,7 +45,7 @@ export default function LoginPage() {
             <div className="relative w-24 h-24">
               <Image 
                 src="/logo.png" 
-                alt="Eye Adom Logo" 
+                alt="Ɛyɛ Adom Logo" 
                 fill 
                 className="object-contain"
                 priority
@@ -55,7 +55,7 @@ export default function LoginPage() {
           
           <div className="text-center mb-10">
             <h1 className="text-3xl font-black text-[#0b1424] leading-tight tracking-tighter uppercase">
-              EYE ADOM
+              ƐYƐ ADOM
             </h1>
             <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[10px] mt-1">SUSU & SAVINGS</p>
           </div>
@@ -136,7 +136,7 @@ export default function LoginPage() {
         
         <div className="bg-slate-50 py-6 text-center border-t border-slate-100">
            <button className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] hover:text-[#0b1424] transition-colors">
-             &copy; 2026 EYE ADOM MIMS
+             &copy; 2026 ƐYƐ ADOM MIMS
            </button>
         </div>
       </div>

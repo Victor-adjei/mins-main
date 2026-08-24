@@ -46,7 +46,7 @@ export default function Dashboard() {
     <div className="max-w-7xl mx-auto">
       <div className="mb-10">
         <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Welcome back, {session?.user?.name}!</h1>
-        <p className="text-slate-500 font-medium mt-1">Here's what's happening today at Eye Adom.</p>
+        <p className="text-slate-500 font-medium mt-1">Here's what's happening today at Ɛyɛ Adom.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

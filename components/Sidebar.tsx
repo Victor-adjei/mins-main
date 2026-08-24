@@ -72,14 +72,14 @@ export default function Sidebar() {
             <div className="relative w-12 h-12 flex-shrink-0">
               <Image 
                 src="/logo.png" 
-                alt="Eye Adom Logo" 
+                alt="Ɛyɛ Adom Logo" 
                 fill 
                 className="object-contain"
                 priority
               />
             </div>
             <div className="flex flex-col">
-              <h2 className="font-black text-lg text-white leading-none tracking-tight">EYE ADOM</h2>
+              <h2 className="font-black text-lg text-white leading-none tracking-tight">ƐYƐ ADOM</h2>
               <p className="text-[10px] font-bold text-slate-400 mt-1 tracking-wider uppercase">SUSU & SAVINGS</p>
             </div>
           </div>

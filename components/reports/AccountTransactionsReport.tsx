@@ -83,7 +83,7 @@ export const AccountTransactionsReport = ({ account, transactions }: ReportProps
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.companyName}>EYE ADOM</Text>
+            <Text style={styles.companyName}>ƐYƐ ADOM</Text>
             <Text style={{ fontSize: 8, color: '#64748b', fontWeight: 'bold' }}>SUSU & SAVINGS</Text>
           </View>
           <Text style={styles.reportTitle}>Account Statement</Text>
@@ -178,7 +178,7 @@ export const AccountTransactionsReport = ({ account, transactions }: ReportProps
 
         {/* Footer */}
         <Text style={styles.footer} render={({ pageNumber, totalPages }) => (
-          `Page ${pageNumber} of ${totalPages} | Statement Generated on ${new Date().toLocaleString()} | Eye Adom Susu & Savings`
+          `Page ${pageNumber} of ${totalPages} | Statement Generated on ${new Date().toLocaleString()} | Ɛyɛ Adom Susu & Savings`
         )} fixed />
       </Page>
     </Document>

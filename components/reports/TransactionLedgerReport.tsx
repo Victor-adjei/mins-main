@@ -37,7 +37,7 @@ export const TransactionLedgerReport = ({ transactions, startDate, endDate }: Le
     <Page size="A4" style={styles.page}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.companyName}>EYE ADOM</Text>
+          <Text style={styles.companyName}>ƐYƐ ADOM</Text>
           <Text style={{ fontSize: 8, color: '#64748b' }}>SUSU & SAVINGS</Text>
         </View>
         <Text style={styles.reportTitle}>Transaction Ledger</Text>
