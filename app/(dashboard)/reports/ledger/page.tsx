@@ -76,6 +76,7 @@ export default function LedgerPage() {
   const [voidTransaction, setVoidTransaction] = useState<any | null>(null);
   const [voidReason, setVoidReason] = useState('');
   const [editAmount, setEditAmount] = useState('');
+  const [editType, setEditType] = useState<'Deposit' | 'Withdrawal'>('Deposit');
   const [editDescription, setEditDescription] = useState('');
   const [modalLoading, setModalLoading] = useState(false);
 
@@ -353,6 +354,7 @@ export default function LedgerPage() {
                           onClick={() => {
                             setEditTransaction(t);
                             setEditAmount(t.amount);
+                            setEditType(t.transaction_type);
                             setEditDescription(t.description || '');
                           }}
                           className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
@@ -467,6 +469,33 @@ export default function LedgerPage() {
             
             <div className="mt-8 space-y-6">
               <div>
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-2">Transaction Type</label>
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setEditType('Deposit')}
+                    className={cn(
+                      "flex-1 py-4 rounded-2xl font-black transition-all",
+                      editType === 'Deposit' ? "bg-emerald-100 text-emerald-700 shadow-inner" : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                    )}
+                  >
+                    DEPOSIT
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditType('Withdrawal')}
+                    disabled={isFieldOfficer}
+                    className={cn(
+                      "flex-1 py-4 rounded-2xl font-black transition-all",
+                      editType === 'Withdrawal' ? "bg-rose-100 text-rose-700 shadow-inner" : "bg-slate-50 text-slate-400 hover:bg-slate-100",
+                      isFieldOfficer && "opacity-50 cursor-not-allowed"
+                    )}
+                  >
+                    WITHDRAWAL
+                  </button>
+                </div>
+              </div>
+              <div>
                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-2">New Amount (GHS)</label>
                 <input 
                   type="number"
@@ -495,7 +524,7 @@ export default function LedgerPage() {
                     const res = await fetch(`/api/transactions/${editTransaction.transaction_id}`, {
                       method: 'PUT',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ amount: parseFloat(editAmount), description: editDescription })
+                      body: JSON.stringify({ amount: parseFloat(editAmount), description: editDescription, type: editType })
                     });
                     if (res.ok) {
                       setEditTransaction(null);

@@ -1,13 +1,19 @@
 import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
+import path from 'path';
 
-// Note: In a real environment, you'd register custom fonts here.
-// Font.register({ family: 'Inter', src: '...' });
+Font.register({
+  family: 'Roboto',
+  fonts: [
+    { src: path.join(process.cwd(), 'public/fonts/Roboto-Regular.ttf') },
+    { src: path.join(process.cwd(), 'public/fonts/Roboto-Bold.ttf'), fontWeight: 'bold' }
+  ]
+});
 
 const styles = StyleSheet.create({
   page: {
     padding: 30,
     backgroundColor: '#ffffff',
-    fontFamily: 'Helvetica',
+    fontFamily: 'Roboto',
   },
   header: {
     flexDirection: 'row',

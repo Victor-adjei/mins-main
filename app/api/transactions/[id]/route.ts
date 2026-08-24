@@ -90,7 +90,7 @@ export const PUT = auth(async (req, { params }: { params: Promise<{ id: string }
   if (!req.auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   
   const { id } = await params;
-  const { amount: newAmount, description } = await req.json();
+  const { amount: newAmount, description, type: newType } = await req.json();
 
   if (newAmount === undefined || newAmount <= 0) {
     return NextResponse.json({ error: 'Valid amount is required' }, { status: 400 });
@@ -122,9 +122,10 @@ export const PUT = auth(async (req, { params }: { params: Promise<{ id: string }
       }
     }
 
-    // 3. Calculate Delta and New Balance
+    // 3. Calculate New Balance
     const oldAmount = parseFloat(trans.amount);
-    const diff = newAmount - oldAmount;
+    const oldType = trans.transaction_type;
+    const finalType = newType || oldType;
     
     const accountRes = await client.query(
       'SELECT balance FROM accounts WHERE account_number = $1 FOR UPDATE',
@@ -134,15 +135,26 @@ export const PUT = auth(async (req, { params }: { params: Promise<{ id: string }
       throw new Error('Account not found');
     }
 
-    const currentBalance = parseFloat(accountRes.rows[0].balance);
-    let newBalance = currentBalance;
+    let currentBalance = parseFloat(accountRes.rows[0].balance);
+    
+    // Reverse old transaction
+    if (oldType === 'Deposit') {
+      currentBalance -= oldAmount;
+    } else if (oldType === 'Withdrawal') {
+      currentBalance += oldAmount;
+    }
 
-    if (trans.transaction_type === 'Deposit') {
-      newBalance = Math.max(0, currentBalance + diff);
-    } else if (trans.transaction_type === 'Withdrawal') {
-      newBalance = currentBalance - diff;
+    // Apply new transaction
+    let newBalance = currentBalance;
+    if (finalType === 'Deposit') {
+      newBalance += newAmount;
+    } else if (finalType === 'Withdrawal') {
+      if (isFieldOfficer) {
+        throw new Error('Access Denied: Field Officers cannot perform withdrawals.');
+      }
+      newBalance -= newAmount;
       if (newBalance < 0) {
-        throw new Error('Insufficient balance: updating this withdrawal would result in a negative account balance.');
+        throw new Error('Insufficient balance: updating this transaction would result in a negative account balance.');
       }
     }
 
@@ -151,8 +163,8 @@ export const PUT = auth(async (req, { params }: { params: Promise<{ id: string }
 
     // 5. Update Transaction
     await client.query(
-      'UPDATE transactions SET amount = $1, description = $2 WHERE transaction_id = $3',
-      [newAmount, description, id]
+      'UPDATE transactions SET amount = $1, description = $2, transaction_type = $3 WHERE transaction_id = $4',
+      [newAmount, description, finalType, id]
     );
 
     await client.query('COMMIT');

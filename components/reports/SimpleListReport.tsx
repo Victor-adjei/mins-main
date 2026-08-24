@@ -1,7 +1,16 @@
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+import path from 'path';
+
+Font.register({
+  family: 'Roboto',
+  fonts: [
+    { src: path.join(process.cwd(), 'public/fonts/Roboto-Regular.ttf') },
+    { src: path.join(process.cwd(), 'public/fonts/Roboto-Bold.ttf'), fontWeight: 'bold' }
+  ]
+});
 
 const styles = StyleSheet.create({
-  page: { padding: 30, backgroundColor: '#ffffff', fontFamily: 'Helvetica' },
+  page: { padding: 30, backgroundColor: '#ffffff', fontFamily: 'Roboto' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
