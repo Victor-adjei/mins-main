@@ -118,6 +118,61 @@ export default function LedgerPage() {
     }).format(typeof amount === 'string' ? parseFloat(amount) : amount);
   };
 
+  const exportToCSV = () => {
+    if (!data) return;
+    let csvContent = "";
+    
+    // Report Header
+    csvContent += "Transaction Ledger Report\n";
+    if (startDate && endDate) {
+      csvContent += `Period:,${startDate} to ${endDate}\n`;
+    } else {
+      csvContent += `Period:,All Time\n`;
+    }
+    csvContent += "\n";
+
+    // Summary Stats
+    if (data.summary) {
+      csvContent += "Summary Statistics\n";
+      csvContent += `Total Deposits:,${data.summary.totalDeposits}\n`;
+      csvContent += `Total Withdrawals:,${data.summary.totalWithdrawals}\n`;
+      csvContent += `Net Cash Flow:,${data.summary.netCashFlow}\n`;
+      csvContent += "\n";
+    }
+
+    // Transactions Table
+    csvContent += "Movement Details\n";
+    const headers = ['Timestamp', 'Account Number', 'Member Name', 'Flow Type', 'Amount (GHS)'];
+    csvContent += headers.join(",") + "\n";
+    
+    const rows = data.transactions.map((t) => {
+      const dt = new Date(t.transaction_date).toLocaleString().replace(/,/g, '');
+      return [
+        dt,
+        t.account_number,
+        `${t.first_name} ${t.surname}`,
+        t.transaction_type,
+        t.amount
+      ];
+    });
+
+    csvContent += rows.map(e => e.join(",")).join("\n");
+      
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    
+    const fileName = (startDate && endDate) 
+      ? `transaction_ledger_${startDate}_to_${endDate}.csv`
+      : `transaction_ledger_${new Date().toISOString().split('T')[0]}.csv`;
+      
+    link.setAttribute("download", fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading && !data) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -134,14 +189,23 @@ export default function LedgerPage() {
           <h1 className="text-4xl font-black text-slate-900 tracking-tighter">Transaction Ledger</h1>
           <p className="text-slate-500 font-medium mt-1">Detailed audit trail and cash flow analysis.</p>
         </div>
-        <a 
-          href={`/api/pdf/ledger?start_date=${startDate}&end_date=${endDate}`}
-          target="_blank"
-          className="flex items-center space-x-2 px-6 py-3 bg-rose-600 text-white rounded-2xl font-black hover:bg-rose-700 transition-all active:scale-95 shadow-xl shadow-rose-500/20"
-        >
-          <FileDown className="w-5 h-5" />
-          <span>Print Report</span>
-        </a>
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={exportToCSV}
+            className="flex items-center space-x-2 px-6 py-3 bg-slate-800 text-white rounded-2xl font-black hover:bg-slate-900 transition-all active:scale-95 shadow-xl shadow-slate-500/20"
+          >
+            <FileDown className="w-5 h-5" />
+            <span>Excel CSV</span>
+          </button>
+          <a 
+            href={`/api/pdf/ledger?start_date=${startDate}&end_date=${endDate}`}
+            target="_blank"
+            className="flex items-center space-x-2 px-6 py-3 bg-rose-600 text-white rounded-2xl font-black hover:bg-rose-700 transition-all active:scale-95 shadow-xl shadow-rose-500/20"
+          >
+            <FileDown className="w-5 h-5" />
+            <span>Print Report</span>
+          </a>
+        </div>
       </div>
 
       {/* Filter Bar */}
