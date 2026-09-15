@@ -9,13 +9,25 @@ export const GET = auth(async (req) => {
   if (!req.auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
+    const { searchParams } = new URL(req.url);
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+
+    let dateFilterTransaction = '';
+    const queryParams: any[] = [];
+
+    if (startDate && endDate) {
+      dateFilterTransaction = 'AND CAST(transaction_date AS DATE) BETWEEN $1 AND $2';
+      queryParams.push(startDate, endDate);
+    }
+
     const [statsResult, accountsResult] = await Promise.all([
       query(`
         SELECT 
-          (SELECT SUM(amount) FROM transactions WHERE transaction_type = 'Deposit' AND voided = false) as total_deposits,
-          (SELECT SUM(amount) FROM transactions WHERE transaction_type = 'Withdrawal' AND voided = false) as total_withdrawals,
+          (SELECT SUM(amount) FROM transactions WHERE transaction_type = 'Deposit' AND voided = false ${dateFilterTransaction}) as total_deposits,
+          (SELECT SUM(amount) FROM transactions WHERE transaction_type = 'Withdrawal' AND voided = false ${dateFilterTransaction}) as total_withdrawals,
           (SELECT SUM(balance) FROM accounts) as global_system_balance
-      `),
+      `, queryParams.length > 0 ? queryParams : undefined),
       query(`
         SELECT a.account_number, c.first_name, c.surname, a.balance 
         FROM accounts a 
@@ -32,7 +44,7 @@ export const GET = auth(async (req) => {
     };
     const accounts = accountsResult.rows;
 
-    const buffer = await renderToBuffer(<FinancialSummaryReport stats={stats} accounts={accounts} />);
+    const buffer = await renderToBuffer(<FinancialSummaryReport stats={stats} accounts={accounts} startDate={startDate} endDate={endDate} />);
 
     return new NextResponse(buffer as any, {
       headers: {

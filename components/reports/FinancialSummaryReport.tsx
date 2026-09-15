@@ -35,9 +35,11 @@ const styles = StyleSheet.create({
 interface FinancialSummaryReportProps {
   stats: any;
   accounts: any[];
+  startDate?: string | null;
+  endDate?: string | null;
 }
 
-export const FinancialSummaryReport = ({ stats, accounts }: FinancialSummaryReportProps) => (
+export const FinancialSummaryReport = ({ stats, accounts, startDate, endDate }: FinancialSummaryReportProps) => (
   <Document>
     <Page size="A4" style={styles.page}>
       <View style={styles.header}>
@@ -45,7 +47,14 @@ export const FinancialSummaryReport = ({ stats, accounts }: FinancialSummaryRepo
           <Text style={styles.companyName}>ƐYƐ ADOM</Text>
           <Text style={{ fontSize: 8, color: '#64748b' }}>SUSU & SAVINGS</Text>
         </View>
-        <Text style={styles.reportTitle}>Financial Summary</Text>
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={styles.reportTitle}>Financial Summary</Text>
+          {startDate && endDate && (
+            <Text style={{ fontSize: 9, color: '#64748b', marginTop: 4 }}>
+              Period: {startDate} to {endDate}
+            </Text>
+          )}
+        </View>
       </View>
 
       {/* Summary Section */}
