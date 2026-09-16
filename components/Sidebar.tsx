@@ -125,18 +125,34 @@ export default function Sidebar() {
             {(isAdmin || isStaff || isFieldOfficer) && (
               <>
                 <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-1">REPORTS</h3>
+                {(isAdmin || isStaff) && (
+                  <Link
+                    href="/reports/ledger"
+                    className={cn(
+                      "flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group",
+                      pathname === '/reports/ledger'
+                        ? "bg-emerald-500/10 text-emerald-400 font-bold" 
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <History className="w-5 h-5 text-slate-500 group-hover:text-emerald-400" />
+                    <span className="text-[11px] font-bold uppercase tracking-widest">
+                      Transaction Ledger
+                    </span>
+                  </Link>
+                )}
                 <Link
-                  href={isFieldOfficer ? "/reports/callover" : "/reports/ledger"}
+                  href="/reports/callover"
                   className={cn(
-                    "flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group",
-                    (pathname === '/reports/ledger' || pathname === '/reports/callover') 
+                    "flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group mt-1",
+                    pathname === '/reports/callover'
                       ? "bg-emerald-500/10 text-emerald-400 font-bold" 
                       : "text-slate-400 hover:text-white hover:bg-white/5"
                   )}
                 >
                   <History className="w-5 h-5 text-slate-500 group-hover:text-emerald-400" />
                   <span className="text-[11px] font-bold uppercase tracking-widest">
-                    {isFieldOfficer ? "Callover Report" : "Transaction Ledger"}
+                    Callover Report
                   </span>
                 </Link>
               </>
