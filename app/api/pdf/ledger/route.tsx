@@ -14,6 +14,7 @@ export const GET = auth(async (req) => {
 
   try {
     const isFieldOfficer = req.auth.user.role === 'Field Officer';
+    const officerFilter = searchParams.get('officer_name');
     const queryParams: any[] = [startDate, endDate];
     let sql = `
       SELECT t.*, c.first_name, c.surname
@@ -27,6 +28,9 @@ export const GET = auth(async (req) => {
     if (isFieldOfficer) {
       sql += ` AND t.performed_by = $3`;
       queryParams.push(req.auth?.user?.name || '');
+    } else if (officerFilter) {
+      sql += ` AND t.performed_by = $3`;
+      queryParams.push(officerFilter);
     }
 
     sql += ` ORDER BY t.transaction_date DESC`;

@@ -44,10 +44,15 @@ interface SummaryStats {
 
 export default function CalloverReportPage() {
   const { data: session } = useSession();
+  const isAdmin = session?.user?.role === 'Admin';
+  
   const [data, setData] = useState<{
     transactions: Transaction[];
     summary: SummaryStats;
   } | null>(null);
+  
+  const [fieldOfficers, setFieldOfficers] = useState<{username: string}[]>([]);
+  const [selectedOfficer, setSelectedOfficer] = useState('');
 
   // Default to today for Callover
   const now = new Date();
@@ -58,13 +63,32 @@ export default function CalloverReportPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (isAdmin) {
+      fetchOfficers();
+    }
     fetchLedger();
-  }, []);
+  }, [isAdmin]);
+
+  async function fetchOfficers() {
+    try {
+      const res = await fetch('/api/users');
+      const json = await res.json();
+      if (res.ok && Array.isArray(json)) {
+        setFieldOfficers(json.filter(u => u.role === 'Field Officer'));
+      }
+    } catch (error) {
+      console.error('Error fetching officers:', error);
+    }
+  }
 
   async function fetchLedger() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/transaction-ledger?start_date=${startDate}&end_date=${endDate}`);
+      const queryParams = new URLSearchParams({ start_date: startDate, end_date: endDate });
+      if (isAdmin && selectedOfficer) {
+        queryParams.append('officer_name', selectedOfficer);
+      }
+      const res = await fetch(`/api/transaction-ledger?${queryParams.toString()}`);
       const json = await res.json();
       if (res.ok) {
         setData(json);
@@ -104,11 +128,11 @@ export default function CalloverReportPage() {
             </div>
             <div>
                 <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Callover Report</h1>
-                <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">Audit trail for officer: <span className="text-[#00c58d]">{session?.user?.name}</span></p>
+                <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">Audit trail for officer: <span className="text-[#00c58d]">{isAdmin && selectedOfficer ? selectedOfficer : (isAdmin ? 'All Officers' : session?.user?.name)}</span></p>
             </div>
         </div>
         <a 
-          href={`/api/pdf/ledger?start_date=${startDate}&end_date=${endDate}`}
+          href={`/api/pdf/ledger?start_date=${startDate}&end_date=${endDate}${isAdmin && selectedOfficer ? `&officer_name=${encodeURIComponent(selectedOfficer)}` : ''}`}
           target="_blank"
           className="flex items-center space-x-2 px-8 py-4 bg-slate-900 text-white rounded-[2rem] font-black hover:bg-slate-800 transition-all active:scale-95 shadow-2xl flex items-center group"
         >
@@ -119,7 +143,22 @@ export default function CalloverReportPage() {
 
       {/* Filter Bar */}
       <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col lg:flex-row lg:items-end gap-6">
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className={cn("flex-1 grid grid-cols-1 gap-6", isAdmin ? "md:grid-cols-3" : "md:grid-cols-2")}>
+          {isAdmin && (
+            <div className="space-y-3">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2 font-black italic">Field Officer</label>
+              <select 
+                value={selectedOfficer}
+                onChange={(e) => setSelectedOfficer(e.target.value)}
+                className="w-full px-4 py-4 bg-slate-50 border-2 border-transparent focus:border-[#00c58d]/20 focus:bg-white rounded-[1.5rem] text-sm font-bold outline-none transition-all shadow-inner"
+              >
+                <option value="">All Officers</option>
+                {fieldOfficers.map(officer => (
+                  <option key={officer.username} value={officer.username}>{officer.username}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="space-y-3">
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2 font-black italic">Start Date</label>
             <div className="relative group">
