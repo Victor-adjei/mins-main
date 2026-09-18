@@ -101,10 +101,10 @@ export default function Dashboard() {
             {[40, 70, 45, 90, 65, 80, 55, 75, 50, 85, 60, 95].map((h, i) => (
               <div 
                 key={i} 
-                className="flex-1 bg-slate-50 rounded-t-xl relative group/bar hover:bg-emerald-50 transition-colors cursor-pointer"
+                className="flex-1 bg-slate-200 rounded-t-xl relative group/bar hover:bg-emerald-100 transition-colors cursor-pointer"
                 style={{ height: `${h}%` }}
               >
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-emerald-500/20 to-transparent h-1/2 rounded-t-xl opacity-0 group-hover/bar:opacity-100 transition-opacity"></div>
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-emerald-500/30 to-transparent h-1/2 rounded-t-xl opacity-0 group-hover/bar:opacity-100 transition-opacity"></div>
               </div>
             ))}
          </div>
