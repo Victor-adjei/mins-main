@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import pool, { query } from '@/lib/db';
 import { auth } from '@/auth';
+import { sendSms } from '@/lib/sms';
 
 export const GET = auth(async (req) => {
   if (!req.auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -46,9 +47,10 @@ export const POST = auth(async (req) => {
 
     // 1. Fetch current balance with row-level lock
     const accountRes = await client.query(
-      `SELECT a.balance, ast.account_status_name 
+      `SELECT a.balance, ast.account_status_name, c.phone_number, c.first_name 
        FROM accounts a 
        LEFT JOIN account_status ast ON a.account_status::VARCHAR = ast.account_status_number::VARCHAR 
+       LEFT JOIN customers c ON a.customer = c.customer_number
        WHERE a.account_number = $1 FOR UPDATE OF a`,
       [account_number]
     );
@@ -94,6 +96,18 @@ export const POST = auth(async (req) => {
     );
 
     await client.query('COMMIT');
+
+    // Send SMS Notification asynchronously
+    const { phone_number, first_name } = accountRes.rows[0];
+    if (phone_number) {
+      const senderId = process.env.SASUSYNC_SENDER_ID || 'MIMS';
+      const action = transaction_type === 'Deposit' ? 'deposited into' : 'withdrawn from';
+      const smsMessage = `Hello ${first_name || 'Customer'}, GHS ${amount} has been ${action} your account ${account_number}. Current Balance: GHS ${newBalance}.`;
+      
+      sendSms(senderId, phone_number, smsMessage).catch(err => {
+        console.error('SMS sending failed:', err);
+      });
+    }
 
     return NextResponse.json({
       message: 'Transaction successful',
