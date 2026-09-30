@@ -102,7 +102,7 @@ export const POST = auth(async (req) => {
     if (phone_number) {
       const senderId = process.env.SASUSYNC_SENDER_ID || 'MIMS';
       const action = transaction_type === 'Deposit' ? 'deposited into' : 'withdrawn from';
-      const smsMessage = `Hello ${first_name || 'Customer'}, GHS ${amount} has been ${action} your account ${account_number}. Current Balance: GHS ${newBalance}.`;
+      const smsMessage = `ƐYƐ ADOM: Hello ${first_name || 'Customer'}, GHS ${amount} has been ${action} your account ${account_number}. Current Balance: GHS ${newBalance}.`;
       
       sendSms(senderId, phone_number, smsMessage).catch(err => {
         console.error('SMS sending failed:', err);
