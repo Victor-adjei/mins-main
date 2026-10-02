@@ -58,6 +58,7 @@ export default function TransactionsPage() {
   const [modalAccountNumber, setModalAccountNumber] = useState('');
   const [modalAccountDetails, setModalAccountDetails] = useState<Account | null>(null);
   const [fetchingModalAccount, setFetchingModalAccount] = useState(false);
+  const [displayLimit, setDisplayLimit] = useState(50);
 
   useEffect(() => {
     if (modalAccountNumber.length === 10) {
@@ -495,6 +496,7 @@ export default function TransactionsPage() {
                     ) : (
                       recentTransactions
                         .filter(tx => tx.account_number.includes(searchQuery) || `${tx.first_name} ${tx.surname}`.toLowerCase().includes(searchQuery.toLowerCase()))
+                        .slice(0, displayLimit)
                         .map((tx) => {
                         const canModify = !isFieldOfficer || (new Date().getTime() - new Date(tx.transaction_date).getTime() < 12 * 60 * 60 * 1000);
                         
@@ -578,6 +580,18 @@ export default function TransactionsPage() {
                   </tbody>
                 </table>
               </div>
+              
+              {recentTransactions.filter(tx => tx.account_number.includes(searchQuery) || `${tx.first_name} ${tx.surname}`.toLowerCase().includes(searchQuery.toLowerCase())).length > displayLimit && (
+                <div className="p-4 bg-white text-center border-t border-slate-100 flex justify-center">
+                  <button 
+                    onClick={() => setDisplayLimit(prev => prev + 50)}
+                    className="px-6 py-2 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-200 transition-all"
+                  >
+                    Load More
+                  </button>
+                </div>
+              )}
+
               <div className="p-8 bg-slate-50/50 text-center border-t border-slate-100">
                  <a href="/reports/ledger" className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] hover:text-blue-600 transition-colors">Go to Administrative Ledger</a>
               </div>

@@ -104,7 +104,7 @@ export const POST = auth(async (req) => {
       const action = transaction_type === 'Deposit' ? 'deposited into' : 'withdrawn from';
       const smsMessage = `ƐYƐ ADOM: Hello ${first_name || 'Customer'}, GHS ${amount} has been ${action} your account ${account_number}. Current Balance: GHS ${newBalance}.`;
       
-      sendSms(senderId, phone_number, smsMessage).catch(err => {
+      sendSms(senderId, phone_number, smsMessage, { sandbox: true }).catch(err => {
         console.error('SMS sending failed:', err);
       });
     }
