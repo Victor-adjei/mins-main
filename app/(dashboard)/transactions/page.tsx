@@ -27,6 +27,7 @@ interface Account {
   balance: string | number;
   account_rank: string | number;
   account_status_name?: string;
+  passport_photo?: string;
 }
 
 export default function TransactionsPage() {
@@ -343,6 +344,24 @@ export default function TransactionsPage() {
 
                   {selectedAccountDetails ? (
                     <div className="relative z-10">
+                      {selectedAccountDetails.passport_photo ? (
+                        <div className="flex justify-center mb-6">
+                          <div className="relative w-32 h-32 rounded-3xl overflow-hidden border-4 border-slate-800 shadow-2xl">
+                            <img 
+                              src={selectedAccountDetails.passport_photo} 
+                              alt="Member Photo"
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-3xl"></div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex justify-center mb-6">
+                          <div className="w-32 h-32 rounded-3xl bg-slate-800 border-4 border-slate-700 shadow-2xl flex items-center justify-center">
+                            <span className="text-slate-500 text-xs font-black uppercase tracking-widest text-center px-4">No Photo</span>
+                          </div>
+                        </div>
+                      )}
                       <div className="space-y-4 mb-6">
                         <div className="flex justify-between items-center py-2 border-b border-white/5">
                           <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Rank</span>

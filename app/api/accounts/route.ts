@@ -23,7 +23,7 @@ export const GET = async (req: Request) => {
     const res = await query(`
       SELECT 
         a.*, 
-        c.first_name, c.surname, c.customer_type,
+        c.first_name, c.surname, c.customer_type, c.passport_photo,
         ct.customer_type_name,
         at.account_type_name,
         as_status.account_status_name,
