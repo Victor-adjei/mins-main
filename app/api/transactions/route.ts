@@ -100,7 +100,7 @@ export const POST = auth(async (req) => {
     // Send SMS Notification asynchronously
     const { phone_number, first_name } = accountRes.rows[0];
     if (phone_number) {
-      const senderId = process.env.SASUSYNC_SENDER_ID || 'MIMS';
+      const senderId = process.env.SASUSYNC_SENDER_ID || 'ƐYƐ ADOM';
       const action = transaction_type === 'Deposit' ? 'deposited into' : 'withdrawn from';
       const smsMessage = `ƐYƐ ADOM: Hello ${first_name || 'Customer'}, GHS ${amount} has been ${action} your account ${account_number}. Current Balance: GHS ${newBalance}.`;
       
