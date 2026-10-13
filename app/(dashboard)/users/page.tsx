@@ -13,7 +13,8 @@ import {
   CheckCircle2,
   Phone,
   Mail,
-  UserCircle
+  UserCircle,
+  Edit2
 } from 'lucide-react';
 
 interface User {
@@ -37,6 +38,14 @@ export default function UsersPage() {
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  const [editUserForm, setEditUserForm] = useState({
+    username: '',
+    email: '',
+    phone: '',
+    role: 'Staff'
+  });
   
   const [newUserForm, setNewUserForm] = useState({
     username: '',
@@ -133,6 +142,55 @@ export default function UsersPage() {
       }
     } catch (err) {
       setError('Network error.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleOpenEdit = (user: User) => {
+    setEditingUser(user);
+    setEditUserForm({
+      username: user.username,
+      email: user.email,
+      phone: user.phone || '',
+      role: user.role
+    });
+    setError(null);
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingUser) return;
+    if (!editUserForm.username.trim()) {
+      setError('Full username is required.');
+      return;
+    }
+    if (!editUserForm.email.trim()) {
+      setError('Email address is required.');
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/users/${editingUser.user_number}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editUserForm),
+      });
+
+      if (res.ok) {
+        setSuccess(`User ${editUserForm.username} updated successfully!`);
+        setShowEditModal(false);
+        fetchUsers();
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Failed to update user.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Network error.');
     } finally {
       setSubmitting(false);
     }
@@ -261,6 +319,14 @@ export default function UsersPage() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end space-x-2">
                         <button 
+                          onClick={() => handleOpenEdit(user)}
+                          className="px-3 py-1.5 bg-blue-50 text-blue-700 text-[10px] font-black uppercase rounded-lg hover:bg-blue-100 transition-colors flex items-center shadow-xs"
+                          title="Edit user details"
+                        >
+                          <Edit2 className="w-3 h-3 mr-1.5" />
+                          Edit
+                        </button>
+                        <button 
                           onClick={() => { setEditingUser(user); setNewRole(user.role); setShowRoleModal(true); }}
                           className="px-3 py-1.5 bg-slate-100 text-slate-700 text-[10px] font-black uppercase rounded-lg hover:bg-slate-200 transition-colors"
                         >
@@ -288,6 +354,85 @@ export default function UsersPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit User Modal */}
+      {showEditModal && editingUser && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl border border-slate-100 overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-[#0b1424] flex items-center justify-center text-white">
+                <Edit2 className="w-6 h-6 text-[#00c58d]" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-slate-900 uppercase">Edit User Details</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ID: {editingUser.user_number}</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Full Username</label>
+                <input 
+                  type="text"
+                  placeholder="e.g. John Doe"
+                  value={editUserForm.username}
+                  onChange={(e) => setEditUserForm({ ...editUserForm, username: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#00c58d]/20 outline-none text-slate-900"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Email Address</label>
+                <input 
+                  type="email"
+                  placeholder="john@example.com"
+                  value={editUserForm.email}
+                  onChange={(e) => setEditUserForm({ ...editUserForm, email: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#00c58d]/20 outline-none text-slate-900"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Mobile Number</label>
+                <input 
+                  type="tel"
+                  placeholder="e.g. 0244000000"
+                  value={editUserForm.phone}
+                  onChange={(e) => setEditUserForm({ ...editUserForm, phone: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#00c58d]/20 outline-none text-slate-900"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">System Role</label>
+                <select 
+                  value={editUserForm.role}
+                  onChange={(e) => setEditUserForm({ ...editUserForm, role: e.target.value })}
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#00c58d]/20 outline-none text-slate-900"
+                >
+                  <option value="Admin">Admin</option>
+                  <option value="Staff">Staff</option>
+                  <option value="Field Officer">Field Officer</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-8">
+              <button 
+                onClick={() => setShowEditModal(false)}
+                className="flex-1 py-3 text-sm font-black text-slate-500 uppercase hover:bg-slate-50 rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveEdit}
+                disabled={submitting}
+                className="flex-1 py-3 bg-[#00c58d] text-white text-sm font-black uppercase rounded-xl hover:bg-[#00ad7c] transition-all shadow-lg shadow-[#00c58d]/20 flex items-center justify-center"
+              >
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                <span>Save Changes</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Role Change Modal */}
       {showRoleModal && editingUser && (

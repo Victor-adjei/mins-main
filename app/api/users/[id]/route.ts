@@ -12,18 +12,43 @@ export const PUT = async (req: Request, { params }: { params: Promise<{ id: stri
 
   try {
     const { id } = await params;
-    const { role, password } = await req.json();
+    const body = await req.json();
+    const { username, email, phone, role, password } = body;
+
+    // Fetch existing user to allow full or partial updates
+    const userRes = await query('SELECT * FROM users WHERE user_number = $1', [id]);
+    if (userRes.rows.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    const currentUser = userRes.rows[0];
+
+    const updatedUsername = username !== undefined && username !== null && username.toString().trim() !== '' 
+      ? username.toString().trim() 
+      : currentUser.username;
+    const updatedEmail = email !== undefined && email !== null && email.toString().trim() !== '' 
+      ? email.toString().trim() 
+      : currentUser.email;
+    const updatedPhone = phone !== undefined 
+      ? (phone && phone.toString().trim() !== '' ? phone.toString().trim() : null) 
+      : currentUser.phone;
+    const updatedRole = role !== undefined && role !== null && role.toString().trim() !== '' 
+      ? role 
+      : currentUser.role;
 
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
       await query(
-        'UPDATE users SET role = $1, password = $2 WHERE user_number = $3',
-        [role, hashedPassword, id]
+        `UPDATE users 
+         SET username = $1, email = $2, phone = $3, role = $4, password = $5 
+         WHERE user_number = $6`,
+        [updatedUsername, updatedEmail, updatedPhone, updatedRole, hashedPassword, id]
       );
     } else {
       await query(
-        'UPDATE users SET role = $1 WHERE user_number = $2',
-        [role, id]
+        `UPDATE users 
+         SET username = $1, email = $2, phone = $3, role = $4 
+         WHERE user_number = $5`,
+        [updatedUsername, updatedEmail, updatedPhone, updatedRole, id]
       );
     }
     
