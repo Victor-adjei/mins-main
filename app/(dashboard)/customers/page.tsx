@@ -15,7 +15,6 @@ import {
   AlertCircle,
   X
 } from 'lucide-react';
-import Image from 'next/image';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -47,12 +46,76 @@ interface CustomerType {
   customer_type_name: string;
 }
 
+async function processAndCompressImage(file: File): Promise<File> {
+  if (!file.type.startsWith('image/')) {
+    return file;
+  }
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const MAX_DIMENSION = 1200;
+        let { width, height } = img;
+
+        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIMENSION) / width);
+            width = MAX_DIMENSION;
+          } else {
+            width = Math.round((width * MAX_DIMENSION) / height);
+            height = MAX_DIMENSION;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+            const cleanName = (file.name || 'photo.jpg').replace(/\.[^/.]+$/, '') + '.jpg';
+            const compressedFile = new File([blob], cleanName, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          },
+          'image/jpeg',
+          0.85
+        );
+      };
+      img.onerror = () => {
+        resolve(file);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => {
+      resolve(file);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function CustomersPage() {
   const [activeTab, setActiveTab] = useState<'add' | 'manage'>('add');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerTypes, setCustomerTypes] = useState<CustomerType[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -127,35 +190,46 @@ export default function CustomersPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-
-    setSubmitting(true);
+    setUploadingPhoto(true);
     setError(null);
     try {
+      // Process and compress image client-side to ensure fast mobile uploads (<250KB) and JPEG compatibility
+      const compressedFile = await processAndCompressImage(file);
+      
+      const localUrl = URL.createObjectURL(compressedFile);
+      setPreviewUrl(localUrl);
+
       const uploadFormData = new FormData();
-      uploadFormData.append('file', file);
+      uploadFormData.append('file', compressedFile);
+
       const res = await fetch('/api/upload', { method: 'POST', body: uploadFormData });
       const data = await res.json();
+
       if (res.ok && data.url) {
         setFormData(prev => ({ ...prev, passport_photo: data.url }));
+        setPreviewUrl(data.url);
       } else {
         setError(data.error || 'Failed to upload photo to storage.');
-        setPreviewUrl(null);
-        setFormData(prev => ({ ...prev, passport_photo: '' }));
+        setPreviewUrl(editingCustomer?.passport_photo || null);
+        setFormData(prev => ({ ...prev, passport_photo: editingCustomer?.passport_photo || '' }));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Upload error:', err);
-      setError('Network error during photo upload.');
-      setPreviewUrl(null);
-      setFormData(prev => ({ ...prev, passport_photo: '' }));
+      setError(err?.message || 'Network error during photo upload.');
+      setPreviewUrl(editingCustomer?.passport_photo || null);
+      setFormData(prev => ({ ...prev, passport_photo: editingCustomer?.passport_photo || '' }));
     } finally {
-      setSubmitting(false);
+      setUploadingPhoto(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (uploadingPhoto) return;
+
     setSubmitting(true);
     setError(null);
 
@@ -163,8 +237,15 @@ export default function CustomersPage() {
     const url = editingCustomer ? `/api/customers/${editingCustomer.customer_number}` : '/api/customers';
 
     const submissionData = editingCustomer
-      ? formData
-      : { ...formData, customer_number: nextCustomerNumber };
+      ? {
+          ...formData,
+          date_of_birth: formData.date_of_birth || null,
+        }
+      : {
+          ...formData,
+          customer_number: nextCustomerNumber,
+          date_of_birth: formData.date_of_birth || null,
+        };
 
     try {
       const res = await fetch(url, {
@@ -172,6 +253,8 @@ export default function CustomersPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submissionData),
       });
+
+      const data = await res.json();
 
       if (res.ok) {
         setSuccess(true);
@@ -184,11 +267,11 @@ export default function CustomersPage() {
           setNextCustomerNumber(Math.floor(10000000 + Math.random() * 90000000).toString());
         }, 1500);
       } else {
-        const data = await res.json();
         setError(data.error || 'Operation failed.');
       }
-    } catch (err) {
-      setError('Network error.');
+    } catch (err: any) {
+      console.error('Submit error:', err);
+      setError(err?.message || 'Network error.');
     } finally {
       setSubmitting(false);
     }
@@ -218,12 +301,24 @@ export default function CustomersPage() {
 
   const handleEdit = (customer: Customer) => {
     setEditingCustomer(customer);
+    let formattedDob = '';
+    if (customer.date_of_birth) {
+      try {
+        const d = new Date(customer.date_of_birth);
+        if (!isNaN(d.getTime())) {
+          formattedDob = d.toISOString().split('T')[0];
+        }
+      } catch {
+        formattedDob = '';
+      }
+    }
+
     setFormData({
       first_name: customer.first_name || '',
       middle_name: customer.middle_name || '',
       surname: customer.surname || '',
       gender: customer.gender || 'Male',
-      date_of_birth: customer.date_of_birth ? new Date(customer.date_of_birth).toISOString().split('T')[0] : '',
+      date_of_birth: formattedDob,
       nationality: customer.nationality || 'Ghanaian',
       phone_number: customer.phone_number || '',
       ghana_card_number: customer.ghana_card_number || '',
@@ -500,36 +595,53 @@ export default function CustomersPage() {
               {/* Photo Section */}
               <div className="md:col-span-2 pt-4">
                 <div className="flex items-start space-x-6">
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-32 h-32 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors bg-gray-50 overflow-hidden relative"
+                  <label
+                    htmlFor="passport-photo-input"
+                    className="w-32 h-32 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors bg-gray-50 overflow-hidden relative rounded-lg select-none"
                   >
                     {previewUrl ? (
-                      <Image src={previewUrl} alt="Preview" fill className="object-cover" />
+                      <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
                       <>
                         <Plus className="w-8 h-8 text-gray-400" />
                         <span className="text-[10px] uppercase font-bold text-gray-400 mt-1">Photo</span>
                       </>
                     )}
-                  </div>
+                    {uploadingPhoto && (
+                      <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white z-10 backdrop-blur-[2px]">
+                        <Loader2 className="w-6 h-6 animate-spin mb-1 text-white" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Uploading...</span>
+                      </div>
+                    )}
+                  </label>
                   <div className="flex-1">
                     <h3 className="text-sm font-bold text-gray-700">Passport Photo</h3>
                     <p className="text-xs text-gray-500 mt-1">Upload a clear passport-sized photo for identification.</p>
                     <input
+                      id="passport-photo-input"
                       type="file"
                       ref={fileInputRef}
                       className="hidden"
                       accept="image/*"
                       onChange={handleFileChange}
+                      disabled={uploadingPhoto || submitting}
                     />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="mt-3 px-4 py-2 bg-gray-200 text-gray-700 text-xs font-bold rounded hover:bg-gray-300 transition-colors"
+                    <label
+                      htmlFor="passport-photo-input"
+                      className={cn(
+                        "inline-flex items-center mt-3 px-4 py-2 bg-gray-200 text-gray-700 text-xs font-bold rounded hover:bg-gray-300 transition-colors cursor-pointer select-none",
+                        (uploadingPhoto || submitting) && "opacity-50 pointer-events-none"
+                      )}
                     >
-                      CHOOSE FILE
-                    </button>
+                      {uploadingPhoto ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                          <span>UPLOADING...</span>
+                        </>
+                      ) : (
+                        <span>CHOOSE FILE</span>
+                      )}
+                    </label>
                   </div>
                 </div>
               </div>
@@ -538,8 +650,8 @@ export default function CustomersPage() {
               <div className="md:col-span-2 pt-6 flex space-x-3">
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="bg-[#28a745] text-white px-8 py-3 font-bold hover:bg-[#218838] transition-colors flex items-center shadow-sm"
+                  disabled={submitting || uploadingPhoto}
+                  className="bg-[#28a745] text-white px-8 py-3 font-bold hover:bg-[#218838] transition-colors flex items-center shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   {editingCustomer ? 'UPDATE CUSTOMER' : 'REGISTER CUSTOMER'}
@@ -548,7 +660,8 @@ export default function CustomersPage() {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="bg-gray-500 text-white px-8 py-3 font-bold hover:bg-gray-600 transition-colors shadow-sm"
+                    disabled={submitting || uploadingPhoto}
+                    className="bg-gray-500 text-white px-8 py-3 font-bold hover:bg-gray-600 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     CANCEL
                   </button>
@@ -601,7 +714,7 @@ export default function CustomersPage() {
                       <td className="px-4 py-3">
                         <div className="w-10 h-10 rounded-full border-2 border-slate-200 bg-slate-100 flex-shrink-0 relative overflow-hidden shadow-sm flex items-center justify-center">
                           {c.passport_photo ? (
-                            <Image src={c.passport_photo} alt="" fill className="object-cover" />
+                            <img src={c.passport_photo} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                               {(c.first_name?.[0] || '') + (c.surname?.[0] || '')}

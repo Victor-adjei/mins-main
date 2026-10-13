@@ -46,6 +46,19 @@ export const PUT = auth(async (req, { params }) => {
       next_of_kin_phone
     } = body;
 
+    // Sanitize date_of_birth: empty strings or invalid dates must be null for PostgreSQL DATE column
+    let sanitizedDob: string | null = null;
+    if (date_of_birth && typeof date_of_birth === 'string' && date_of_birth.trim() !== '') {
+      try {
+        const parsed = new Date(date_of_birth);
+        if (!isNaN(parsed.getTime())) {
+          sanitizedDob = parsed.toISOString().split('T')[0];
+        }
+      } catch {
+        sanitizedDob = null;
+      }
+    }
+
     const res = await query(`
       UPDATE customers 
       SET first_name = $1, 
@@ -64,9 +77,20 @@ export const PUT = auth(async (req, { params }) => {
       WHERE customer_number = $14
       RETURNING *
     `, [
-      first_name, middle_name, surname, gender, date_of_birth,
-      nationality, phone_number, ghana_card_number, 
-      mobile_banker, passport_photo, customer_type, next_of_kin, next_of_kin_phone, id
+      first_name || null,
+      middle_name || null,
+      surname || null,
+      gender || null,
+      sanitizedDob,
+      nationality || null,
+      phone_number || null,
+      ghana_card_number || null, 
+      mobile_banker || null, 
+      passport_photo || null,
+      customer_type ? customer_type.toString() : null,
+      next_of_kin || null,
+      next_of_kin_phone || null,
+      id
     ]);
 
     if (res.rows.length === 0) {
@@ -74,9 +98,9 @@ export const PUT = auth(async (req, { params }) => {
     }
 
     return NextResponse.json(res.rows[0]);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update Customer API Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Internal Server Error' }, { status: 500 });
   }
 });
 

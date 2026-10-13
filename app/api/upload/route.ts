@@ -13,9 +13,18 @@ export const POST = auth(async (req) => {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
+    // Validate size limit (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: 'File size exceeds 10MB limit. Please choose a smaller image.' }, { status: 400 });
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
-    const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-    const contentType = file.type;
+    
+    // Sanitize filename for Supabase storage
+    const rawName = file.name || 'photo.jpg';
+    const cleanName = rawName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const fileName = `${Date.now()}-${cleanName}`;
+    const contentType = file.type || 'image/jpeg';
 
     const publicUrl = await uploadToSupabase(buffer, fileName, contentType);
 
@@ -24,8 +33,8 @@ export const POST = auth(async (req) => {
     }
 
     return NextResponse.json({ url: publicUrl });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Upload API Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Internal Server Error during upload' }, { status: 500 });
   }
 });

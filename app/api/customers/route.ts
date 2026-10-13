@@ -50,6 +50,19 @@ export const POST = auth(async (req) => {
       next_of_kin_phone
     } = body;
 
+    // Sanitize date_of_birth: empty strings or invalid dates must be null for PostgreSQL DATE column
+    let sanitizedDob: string | null = null;
+    if (date_of_birth && typeof date_of_birth === 'string' && date_of_birth.trim() !== '') {
+      try {
+        const parsed = new Date(date_of_birth);
+        if (!isNaN(parsed.getTime())) {
+          sanitizedDob = parsed.toISOString().split('T')[0];
+        }
+      } catch {
+        sanitizedDob = null;
+      }
+    }
+
     const res = await query(`
       INSERT INTO customers (
         first_name, middle_name, surname, gender, date_of_birth,
@@ -63,13 +76,13 @@ export const POST = auth(async (req) => {
       middle_name || null,
       surname || null,
       gender || null,
-      date_of_birth || null,
+      sanitizedDob,
       nationality || null,
       phone_number || null,
       ghana_card_number || null,
       mobile_banker || null,
       passport_photo || null,
-      customer_type || null,
+      customer_type ? customer_type.toString() : null,
       customer_number || Math.floor(10000000 + Math.random() * 90000000).toString(),
       next_of_kin || null,
       next_of_kin_phone || null
