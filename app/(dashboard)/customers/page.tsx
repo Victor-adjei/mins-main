@@ -122,6 +122,8 @@ export default function CustomersPage() {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -184,6 +186,10 @@ export default function CustomersPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'phone_number') {
+      if (phoneError) setPhoneError(null);
+      if (error && error.toLowerCase().includes('phone number')) setError(null);
+    }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -230,8 +236,39 @@ export default function CustomersPage() {
     e.preventDefault();
     if (uploadingPhoto) return;
 
-    setSubmitting(true);
     setError(null);
+    setPhoneError(null);
+
+    // Validate required fields
+    if (!formData.first_name.trim()) {
+      setError('First name is required.');
+      return;
+    }
+
+    if (!formData.surname.trim()) {
+      setError('Surname is required.');
+      return;
+    }
+
+    // Phone number validation: Mandatory and exactly 10 digits
+    const rawPhone = formData.phone_number ? formData.phone_number.trim() : '';
+    if (!rawPhone) {
+      const msg = 'Phone number is mandatory and must be exactly 10 digits.';
+      setError(msg);
+      setPhoneError(msg);
+      phoneInputRef.current?.focus();
+      return;
+    }
+
+    if (!/^\d+$/.test(rawPhone) || rawPhone.length !== 10) {
+      const msg = 'Phone number must be exactly 10 digits.';
+      setError(msg);
+      setPhoneError(msg);
+      phoneInputRef.current?.focus();
+      return;
+    }
+
+    setSubmitting(true);
 
     const method = editingCustomer ? 'PUT' : 'POST';
     const url = editingCustomer ? `/api/customers/${editingCustomer.customer_number}` : '/api/customers';
@@ -239,10 +276,12 @@ export default function CustomersPage() {
     const submissionData = editingCustomer
       ? {
           ...formData,
+          phone_number: rawPhone,
           date_of_birth: formData.date_of_birth || null,
         }
       : {
           ...formData,
+          phone_number: rawPhone,
           customer_number: nextCustomerNumber,
           date_of_birth: formData.date_of_birth || null,
         };
@@ -267,7 +306,12 @@ export default function CustomersPage() {
           setNextCustomerNumber(Math.floor(10000000 + Math.random() * 90000000).toString());
         }, 1500);
       } else {
-        setError(data.error || 'Operation failed.');
+        const errorMsg = data.error || 'Operation failed.';
+        setError(errorMsg);
+        if (errorMsg.toLowerCase().includes('phone number')) {
+          setPhoneError(errorMsg);
+          phoneInputRef.current?.focus();
+        }
       }
     } catch (err: any) {
       console.error('Submit error:', err);
@@ -296,11 +340,15 @@ export default function CustomersPage() {
     });
     setPreviewUrl(null);
     setEditingCustomer(null);
+    setError(null);
+    setPhoneError(null);
     setNextCustomerNumber(Math.floor(10000000 + Math.random() * 90000000).toString());
   };
 
   const handleEdit = (customer: Customer) => {
     setEditingCustomer(customer);
+    setError(null);
+    setPhoneError(null);
     let formattedDob = '';
     if (customer.date_of_birth) {
       try {
@@ -435,7 +483,7 @@ export default function CustomersPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+            <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               {/* Row 1 */}
               <div className="flex flex-col space-y-1">
                 <label className="text-sm font-bold text-gray-700">Customer Number (Auto-Generated)</label>
@@ -549,15 +597,48 @@ export default function CustomersPage() {
 
               {/* Row 5 */}
               <div className="flex flex-col space-y-1">
-                <label className="text-sm font-bold text-gray-700 uppercase tracking-tight">Phone Number</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-bold text-gray-700 uppercase tracking-tight">
+                    Phone Number <span className="text-rose-500 font-extrabold">*</span>
+                  </label>
+                  <span
+                    className={cn(
+                      "text-xs font-semibold tracking-tight transition-colors",
+                      formData.phone_number.trim().length === 10 && /^\d{10}$/.test(formData.phone_number.trim())
+                        ? "text-emerald-600 font-bold"
+                        : formData.phone_number.trim().length > 10
+                        ? "text-rose-600 font-bold"
+                        : "text-gray-400"
+                    )}
+                  >
+                    {formData.phone_number.trim().length}/10 digits
+                  </span>
+                </div>
                 <input
+                  ref={phoneInputRef}
                   type="tel"
                   name="phone_number"
                   value={formData.phone_number}
                   onChange={handleInputChange}
-                  className="bg-[#f0f9ff] border-2 border-slate-300 px-3 py-2 rounded-lg text-sm font-black text-slate-950 focus:border-[#28a745] focus:bg-white focus:ring-4 focus:ring-[#28a745]/10 focus:outline-none transition-all placeholder:text-slate-400"
+                  placeholder="e.g. 0241234567"
+                  className={cn(
+                    "bg-[#f0f9ff] border-2 px-3 py-2 rounded-lg text-sm font-black text-slate-950 focus:bg-white focus:ring-4 focus:outline-none transition-all placeholder:text-slate-400",
+                    phoneError
+                      ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/10 bg-rose-50/30"
+                      : "border-slate-300 focus:border-[#28a745] focus:ring-[#28a745]/10"
+                  )}
                   required
                 />
+                {phoneError ? (
+                  <p className="text-xs font-bold text-rose-600 flex items-center mt-1 animate-in fade-in duration-200">
+                    <AlertCircle className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
+                    <span>{phoneError}</span>
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-gray-500">
+                    Must be exactly 10 digits (numbers only)
+                  </p>
+                )}
               </div>
               <div className="flex flex-col space-y-1">
                 <label className="text-sm font-bold text-gray-700 uppercase tracking-tight">Mobile Banker</label>

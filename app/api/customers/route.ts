@@ -63,6 +63,15 @@ export const POST = auth(async (req) => {
       }
     }
 
+    // Validate mandatory phone number (must be exactly 10 digits)
+    const cleanPhone = typeof phone_number === 'string' ? phone_number.trim() : '';
+    if (!cleanPhone || !/^\d{10}$/.test(cleanPhone)) {
+      return NextResponse.json(
+        { error: 'Phone number must be exactly 10 digits' },
+        { status: 400 }
+      );
+    }
+
     const res = await query(`
       INSERT INTO customers (
         first_name, middle_name, surname, gender, date_of_birth,
@@ -78,7 +87,7 @@ export const POST = auth(async (req) => {
       gender || null,
       sanitizedDob,
       nationality || null,
-      phone_number || null,
+      cleanPhone,
       ghana_card_number || null,
       mobile_banker || null,
       passport_photo || null,
