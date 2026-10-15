@@ -10,6 +10,7 @@ export const GET = async (req: Request) => {
 
   const { searchParams } = new URL(req.url);
   const accountNumber = searchParams.get('accountNumber');
+  const customerId = searchParams.get('customerId') || searchParams.get('customerNumber') || searchParams.get('customer');
 
   try {
     let whereClause = '';
@@ -18,11 +19,16 @@ export const GET = async (req: Request) => {
     if (accountNumber) {
       whereClause = 'WHERE a.account_number = $1';
       params = [accountNumber];
+    } else if (customerId) {
+      whereClause = 'WHERE (a.customer = $1 OR c.customer_number = $1 OR c.customer_id::text = $1)';
+      params = [customerId];
     }
 
     const res = await query(`
       SELECT 
         a.*, 
+        COALESCE(c.customer_number, a.customer) as customer_number,
+        c.customer_id,
         c.first_name, c.surname, c.customer_type, c.passport_photo,
         ct.customer_type_name,
         at.account_type_name,

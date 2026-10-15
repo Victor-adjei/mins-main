@@ -13,6 +13,8 @@ export const GET = async (req: Request, { params }: { params: Promise<{ accountN
     const res = await query(`
       SELECT 
         a.*, 
+        COALESCE(c.customer_number, a.customer) as customer_number,
+        c.customer_id,
         c.first_name, c.surname, c.customer_type,
         ct.customer_type_name,
         at.account_type_name,

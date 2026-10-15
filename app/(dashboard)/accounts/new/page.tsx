@@ -25,6 +25,7 @@ function cn(...inputs: ClassValue[]) {
 
 interface Customer {
   customer_number: string;
+  customer_id?: number | string;
   first_name: string;
   surname: string;
 }
@@ -99,10 +100,15 @@ export default function OpenAccountPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const filteredCustomers = customers.filter(c => 
-    `${c.first_name} ${c.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.customer_number.toString().includes(searchTerm)
-  );
+  const filteredCustomers = customers.filter(c => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return true;
+    const cleanId = term.replace(/^(id\s*[:#-]?\s*|#\s*|cust\s*[:#-]?\s*)/i, '').trim();
+    const fullName = `${c.first_name || ''} ${c.surname || ''}`.toLowerCase();
+    const custNum = (c.customer_number || '').toString().toLowerCase();
+    const custId = c.customer_id ? c.customer_id.toString().toLowerCase() : '';
+    return fullName.includes(term) || custNum.includes(cleanId || term) || custId.includes(cleanId || term);
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

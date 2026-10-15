@@ -28,6 +28,8 @@ interface Account {
   first_name: string;
   surname: string;
   customer_number: string;
+  customer_id?: number | string;
+  customer?: string;
   account_type_name: string;
   account_type: number | string;
   customer_type_name?: string;
@@ -40,8 +42,15 @@ interface Account {
 
 interface Customer {
   customer_number: string;
+  customer_id?: number | string;
   first_name: string;
   surname: string;
+  phone_number?: string;
+  customer_type?: string | number;
+  customer_type_name?: string;
+  registration_date?: string;
+  passport_photo?: string;
+  mobile_banker?: string;
 }
 
 interface AccountType {
@@ -67,6 +76,7 @@ export default function AccountsPage() {
 
   // Manage State
   const [searchTerm, setSearchTerm] = useState('');
+  const [manageFilter, setManageFilter] = useState<'all' | 'unassigned'>('all');
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
 
   // Generated Account Number
@@ -184,10 +194,17 @@ export default function AccountsPage() {
       account_status: account.account_status || 1
     });
     setSelectedCustomer({
-      customer_number: account.customer_number,
+      customer_number: account.customer_number || account.customer || '',
+      customer_id: account.customer_id,
       first_name: account.first_name,
       surname: account.surname
     });
+    setActiveTab('create');
+  };
+
+  const handleOpenAccountForCustomer = (customer: Customer) => {
+    resetForm();
+    setSelectedCustomer(customer);
     setActiveTab('create');
   };
 
@@ -213,26 +230,132 @@ export default function AccountsPage() {
     window.print();
   };
 
-  const filteredCustomers = customers.filter(c =>
-    `${c.first_name} ${c.surname}`.toLowerCase().includes(searchCustomer.toLowerCase()) ||
-    c.customer_number.toString().includes(searchCustomer)
-  );
+  // Set of customer identifiers (numbers and IDs) that have at least one account
+  const assignedCustomerIdentifiers = useMemo(() => {
+    const set = new Set<string>();
+    accounts.forEach(a => {
+      const num = a.customer_number || a.customer;
+      if (num) set.add(num.toString().trim().toLowerCase());
+      if (a.customer_id) set.add(a.customer_id.toString().trim().toLowerCase());
+    });
+    return set;
+  }, [accounts]);
 
-  const filteredAccounts = accounts.filter(a =>
-    `${a.first_name} ${a.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.account_number.toString().includes(searchTerm)
-  );
+  // Registered customers who do not have an assigned account number
+  const unassignedCustomers = useMemo(() => {
+    return customers.filter(c => {
+      const custNum = c.customer_number ? c.customer_number.toString().trim().toLowerCase() : '';
+      const custId = c.customer_id ? c.customer_id.toString().trim().toLowerCase() : '';
+      const hasAccount = (custNum && assignedCustomerIdentifiers.has(custNum)) || 
+                         (custId && assignedCustomerIdentifiers.has(custId));
+      return !hasAccount;
+    });
+  }, [customers, assignedCustomerIdentifiers]);
+
+  const filteredCustomers = customers.filter(c => {
+    const term = searchCustomer.trim().toLowerCase();
+    if (!term) return true;
+    const cleanId = term.replace(/^(id\s*[:#-]?\s*|#\s*|cust\s*[:#-]?\s*)/i, '').trim();
+    const nameMatch = `${c.first_name || ''} ${c.surname || ''}`.toLowerCase().includes(term);
+    const numMatch = (c.customer_number || '').toString().toLowerCase().includes(cleanId || term);
+    const idMatch = c.customer_id ? c.customer_id.toString().toLowerCase().includes(cleanId || term) : false;
+    return nameMatch || numMatch || idMatch;
+  });
+
+  const cleanSearchTerm = searchTerm.trim().toLowerCase();
+  const strippedSearchTerm = cleanSearchTerm.replace(/^(id\s*[:#-]?\s*|#\s*|cust\s*[:#-]?\s*)/i, '').trim();
+
+  // Filter accounts by Full Name, Account Number, or Customer ID
+  const filteredAccounts = useMemo(() => {
+    if (!cleanSearchTerm) return accounts;
+    return accounts.filter(a => {
+      const fullName = `${a.first_name || ''} ${a.surname || ''}`.toLowerCase();
+      const accNum = (a.account_number || '').toString().toLowerCase();
+      const custNum = (a.customer_number || a.customer || '').toString().toLowerCase();
+      const custId = a.customer_id ? a.customer_id.toString().toLowerCase() : '';
+
+      return (
+        fullName.includes(cleanSearchTerm) ||
+        accNum.includes(cleanSearchTerm) ||
+        (strippedSearchTerm && accNum.includes(strippedSearchTerm)) ||
+        custNum.includes(cleanSearchTerm) ||
+        (strippedSearchTerm && custNum.includes(strippedSearchTerm)) ||
+        custId.includes(cleanSearchTerm) ||
+        (strippedSearchTerm && custId.includes(strippedSearchTerm))
+      );
+    });
+  }, [accounts, cleanSearchTerm, strippedSearchTerm]);
+
+  // Filter unassigned customers by Name, Customer ID, or Phone
+  const filteredUnassignedCustomers = useMemo(() => {
+    if (!cleanSearchTerm) return unassignedCustomers;
+    return unassignedCustomers.filter(c => {
+      const fullName = `${c.first_name || ''} ${c.surname || ''}`.toLowerCase();
+      const custNum = (c.customer_number || '').toString().toLowerCase();
+      const custId = c.customer_id ? c.customer_id.toString().toLowerCase() : '';
+      const phone = (c.phone_number || '').toString().toLowerCase();
+
+      return (
+        fullName.includes(cleanSearchTerm) ||
+        custNum.includes(cleanSearchTerm) ||
+        (strippedSearchTerm && custNum.includes(strippedSearchTerm)) ||
+        custId.includes(cleanSearchTerm) ||
+        (strippedSearchTerm && custId.includes(strippedSearchTerm)) ||
+        phone.includes(cleanSearchTerm)
+      );
+    });
+  }, [unassignedCustomers, cleanSearchTerm, strippedSearchTerm]);
+
+  // Check if search matches any registered customer who has NO account yet
+  const matchingUnassignedInSearch = useMemo(() => {
+    if (!cleanSearchTerm) return [];
+    return unassignedCustomers.filter(c => {
+      const fullName = `${c.first_name || ''} ${c.surname || ''}`.toLowerCase();
+      const custNum = (c.customer_number || '').toString().toLowerCase();
+      const custId = c.customer_id ? c.customer_id.toString().toLowerCase() : '';
+      return (
+        fullName.includes(cleanSearchTerm) ||
+        custNum.includes(cleanSearchTerm) ||
+        (strippedSearchTerm && custNum.includes(strippedSearchTerm)) ||
+        custId.includes(cleanSearchTerm) ||
+        (strippedSearchTerm && custId.includes(strippedSearchTerm))
+      );
+    });
+  }, [unassignedCustomers, cleanSearchTerm, strippedSearchTerm]);
 
   const exportToCSV = () => {
-    const headers = ['Account Number', 'Customer', 'Type', 'Status', 'Balance', 'Date Created', 'Mobile Banker'];
-    const rows = accounts.map(a => [
-      a.account_number,
-      `${a.first_name} ${a.surname}`,
-      a.account_type_name,
-      a.account_status_name,
-      a.balance,
-      new Date(a.created_at).toLocaleDateString(),
-      a.mobile_banker || 'N/A'
+    if (manageFilter === 'unassigned') {
+      const headers = ['Customer ID', 'Customer Name', 'Customer Type', 'Phone Number', 'Registration Date'];
+      const rows = filteredUnassignedCustomers.map(c => [
+        `"${c.customer_number || c.customer_id || ''}"`,
+        `"${c.first_name || ''} ${c.surname || ''}"`,
+        `"${c.customer_type_name || 'Regular Customer'}"`,
+        `"${c.phone_number || 'N/A'}"`,
+        `"${c.registration_date ? new Date(c.registration_date).toLocaleDateString() : 'N/A'}"`
+      ]);
+
+      const csvContent = headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `unassigned_customers_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+
+    const headers = ['Account Number', 'Customer ID', 'Customer', 'Type', 'Status', 'Balance', 'Date Created', 'Mobile Banker'];
+    const rows = filteredAccounts.map(a => [
+      `"${a.account_number}"`,
+      `"${a.customer_number || a.customer || a.customer_id || 'N/A'}"`,
+      `"${a.first_name} ${a.surname}"`,
+      `"${a.account_type_name}"`,
+      `"${a.account_status_name}"`,
+      `"${a.balance}"`,
+      `"${new Date(a.created_at).toLocaleDateString()}"`,
+      `"${a.mobile_banker || 'N/A'}"`
     ]);
 
     const csvContent = headers.join(",") + "\n" 
@@ -363,7 +486,7 @@ export default function AccountsPage() {
                           {filteredCustomers.length > 0 ? (
                             filteredCustomers.map(c => (
                               <button
-                                key={c.customer_number}
+                                key={c.customer_number || c.customer_id}
                                 type="button"
                                 onClick={() => {
                                   setSelectedCustomer(c);
@@ -373,7 +496,7 @@ export default function AccountsPage() {
                                 className="w-full text-left px-6 py-3 hover:bg-blue-50 transition-colors border-b border-slate-50 last:border-0"
                               >
                                 <p className="text-sm font-black text-slate-900">{c.first_name} {c.surname}</p>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID: {c.customer_number}</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID: {c.customer_number || c.customer_id}</p>
                               </button>
                             ))
                           ) : (
@@ -455,17 +578,19 @@ export default function AccountsPage() {
 
         {activeTab === 'manage' && (
           <div className="animate-in fade-in duration-500">
-            {/* Search and Filters */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 px-4">
+            {/* Search and Filters Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 px-4">
               <div>
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">MANAGE ACCOUNTS</h2>
-                <p className="text-sm font-bold text-slate-400 mt-1 uppercase tracking-widest">Active records in the system</p>
+                <p className="text-sm font-bold text-slate-400 mt-1 uppercase tracking-widest">
+                  {manageFilter === 'all' ? 'Active account records in the system' : 'Registered customers without an assigned account number'}
+                </p>
               </div>
               <div className="relative flex-1 max-w-md">
                 <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search by name or account number..."
+                  placeholder="Search by name, account number or customer ID..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 focus:ring-2 focus:ring-[#0066cc]/10 focus:border-[#0066cc]/50 rounded-2xl text-sm transition-all outline-none font-bold text-slate-900 shadow-sm"
@@ -473,84 +598,244 @@ export default function AccountsPage() {
               </div>
             </div>
 
-            {/* Table Section */}
-            {/* Table Section */}
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden mt-4">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-900 text-white">
-                      <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">SN</th>
-                      <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800 underline">Account number</th>
-                      <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">Account Name</th>
-                      <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">Account Type</th>
-                      <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">Customer Type</th>
-                      <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">Account Status</th>
-                      <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">Date Open</th>
-                      <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {loading ? (
-                      Array(5).fill(0).map((_, i) => (
-                        <tr key={i} className="animate-pulse">
-                          <td colSpan={8} className="px-4 py-10"><div className="h-4 bg-slate-100 rounded w-full"></div></td>
-                        </tr>
-                      ))
-                    ) : filteredAccounts.map((account, index) => (
-                      <tr key={account.account_number} className="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 group">
-                        <td className="px-5 py-6 text-xs font-bold text-slate-400">{index + 1}</td>
-                        <td className="px-5 py-6 font-black text-sm text-slate-900 group-hover:text-blue-600 transition-colors underline decoration-blue-500/30">{account.account_number}</td>
-                        <td className="px-5 py-6 font-black text-sm text-slate-900 uppercase tracking-tight">{account.first_name} {account.surname}</td>
-                        <td className="px-5 py-6 font-bold text-sm text-slate-600">{account.account_type_name}</td>
-                        <td className="px-5 py-6 font-bold text-sm text-slate-500">{account.customer_type_name || 'Regular Customer'}</td>
-                        <td className="px-5 py-6">
-                          <span className={cn(
-                            "inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm",
-                            account.account_status_name === 'Active' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-rose-50 text-rose-600 border border-rose-100"
-                          )}>
-                            {account.account_status_name}
-                          </span>
-                        </td>
-                        <td className="px-5 py-6 font-bold text-sm text-slate-500">
-                          {new Date(account.created_at).toLocaleDateString('en-GB')}
-                        </td>
-                        <td className="px-5 py-6 text-right">
-                          <div className="flex items-center justify-end space-x-3">
-                            <button
-                              onClick={() => handleEdit(account)}
-                              className="p-2 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all active:scale-90 shadow-sm border border-blue-100"
-                              title="Edit"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(account.account_number)}
-                              className="p-2 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all active:scale-90 shadow-sm border border-rose-100"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handlePrintSingle(account)}
-                              className="p-2 text-slate-600 hover:bg-slate-900 hover:text-white rounded-xl transition-all active:scale-90 shadow-sm border border-slate-100"
-                              title="Print"
-                            >
-                              <Printer className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {filteredAccounts.length === 0 && !loading && (
-                  <div className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-sm">
-                    No accounts found.
-                  </div>
+            {/* Sub-view Filter Pills */}
+            <div className="flex items-center gap-3 px-4 mb-6">
+              <button
+                type="button"
+                onClick={() => setManageFilter('all')}
+                className={cn(
+                  "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all",
+                  manageFilter === 'all'
+                    ? "bg-slate-900 text-white shadow-md"
+                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
                 )}
-              </div>
+              >
+                <span>All Accounts</span>
+                <span className={cn(
+                  "px-2.5 py-0.5 rounded-full text-[10px] font-black",
+                  manageFilter === 'all' ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-700"
+                )}>
+                  {accounts.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setManageFilter('unassigned')}
+                className={cn(
+                  "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all",
+                  manageFilter === 'unassigned'
+                    ? "bg-amber-500 text-white shadow-md shadow-amber-500/20"
+                    : "bg-white text-amber-700 hover:bg-amber-50 border border-amber-200"
+                )}
+              >
+                <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                <span>Customers Without Account</span>
+                <span className={cn(
+                  "px-2.5 py-0.5 rounded-full text-[10px] font-black",
+                  manageFilter === 'unassigned' ? "bg-amber-600 text-white" : "bg-amber-100 text-amber-900"
+                )}>
+                  {unassignedCustomers.length}
+                </span>
+              </button>
             </div>
+
+            {/* Unassigned customer match notification when searching in All Accounts */}
+            {manageFilter === 'all' && matchingUnassignedInSearch.length > 0 && (
+              <div className="mx-4 mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm animate-in fade-in duration-300">
+                <div className="flex items-start space-x-3">
+                  <div className="p-2 bg-amber-500 text-white rounded-xl shadow-sm mt-0.5">
+                    <AlertCircle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-amber-950 uppercase tracking-tight">
+                      {matchingUnassignedInSearch.length === 1
+                        ? 'Registered Customer Found (No Account Number Yet)'
+                        : `${matchingUnassignedInSearch.length} Registered Customers Found Without Accounts`}
+                    </h4>
+                    <p className="text-xs font-semibold text-amber-800 mt-0.5">
+                      {matchingUnassignedInSearch.length === 1 ? (
+                        <>
+                          Customer <span className="font-bold underline">{matchingUnassignedInSearch[0].first_name} {matchingUnassignedInSearch[0].surname}</span> (Customer ID: <span className="font-bold font-mono">{matchingUnassignedInSearch[0].customer_number || matchingUnassignedInSearch[0].customer_id}</span>) is registered in the system but does not have an assigned account number yet.
+                        </>
+                      ) : (
+                        `Matching customers without accounts: ${matchingUnassignedInSearch.map(c => `${c.first_name} ${c.surname} (ID: ${c.customer_number || c.customer_id})`).join(', ')}`
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (matchingUnassignedInSearch.length === 1) {
+                        handleOpenAccountForCustomer(matchingUnassignedInSearch[0]);
+                      } else {
+                        setManageFilter('unassigned');
+                      }
+                    }}
+                    className="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-amber-600/20 flex items-center space-x-1.5 whitespace-nowrap"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{matchingUnassignedInSearch.length === 1 ? 'Open Account Now' : 'View Unassigned'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Table Section: All Accounts */}
+            {manageFilter === 'all' && (
+              <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden mt-4">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-900 text-white">
+                        <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">SN</th>
+                        <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800 underline">Account number</th>
+                        <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">Account Name & ID</th>
+                        <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">Account Type</th>
+                        <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">Customer Type</th>
+                        <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">Account Status</th>
+                        <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">Date Open</th>
+                        <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {loading ? (
+                        Array(5).fill(0).map((_, i) => (
+                          <tr key={i} className="animate-pulse">
+                            <td colSpan={8} className="px-4 py-10"><div className="h-4 bg-slate-100 rounded w-full"></div></td>
+                          </tr>
+                        ))
+                      ) : filteredAccounts.map((account, index) => (
+                        <tr key={account.account_number} className="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 group">
+                          <td className="px-5 py-6 text-xs font-bold text-slate-400">{index + 1}</td>
+                          <td className="px-5 py-6 font-black text-sm text-slate-900 group-hover:text-blue-600 transition-colors underline decoration-blue-500/30 font-mono">
+                            {account.account_number}
+                          </td>
+                          <td className="px-5 py-6">
+                            <div className="font-black text-sm text-slate-900 uppercase tracking-tight">
+                              {account.first_name} {account.surname}
+                            </div>
+                            <div className="text-[11px] font-bold text-slate-400 mt-0.5">
+                              Customer ID: <span className="text-slate-600 font-semibold font-mono">{account.customer_number || account.customer || account.customer_id || 'N/A'}</span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-6 font-bold text-sm text-slate-600">{account.account_type_name}</td>
+                          <td className="px-5 py-6 font-bold text-sm text-slate-500">{account.customer_type_name || 'Regular Customer'}</td>
+                          <td className="px-5 py-6">
+                            <span className={cn(
+                              "inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm",
+                              account.account_status_name === 'Active' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-rose-50 text-rose-600 border border-rose-100"
+                            )}>
+                              {account.account_status_name}
+                            </span>
+                          </td>
+                          <td className="px-5 py-6 font-bold text-sm text-slate-500">
+                            {new Date(account.created_at).toLocaleDateString('en-GB')}
+                          </td>
+                          <td className="px-5 py-6 text-right">
+                            <div className="flex items-center justify-end space-x-3">
+                              <button
+                                onClick={() => handleEdit(account)}
+                                className="p-2 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all active:scale-90 shadow-sm border border-blue-100"
+                                title="Edit"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(account.account_number)}
+                                className="p-2 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all active:scale-90 shadow-sm border border-rose-100"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handlePrintSingle(account)}
+                                className="p-2 text-slate-600 hover:bg-slate-900 hover:text-white rounded-xl transition-all active:scale-90 shadow-sm border border-slate-100"
+                                title="Print"
+                              >
+                                <Printer className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {filteredAccounts.length === 0 && !loading && (
+                    <div className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-sm">
+                      {searchTerm ? 'No accounts found matching your search.' : 'No accounts found.'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Table Section: Customers Without Account */}
+            {manageFilter === 'unassigned' && (
+              <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden mt-4">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-900 text-white">
+                        <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">SN</th>
+                        <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800 underline">Customer ID</th>
+                        <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">Customer Name</th>
+                        <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">Customer Type</th>
+                        <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">Phone Number</th>
+                        <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800">Registration Date</th>
+                        <th className="px-5 py-5 text-[10px] font-black uppercase tracking-widest border-b border-slate-800 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {loading ? (
+                        Array(5).fill(0).map((_, i) => (
+                          <tr key={i} className="animate-pulse">
+                            <td colSpan={7} className="px-4 py-10"><div className="h-4 bg-slate-100 rounded w-full"></div></td>
+                          </tr>
+                        ))
+                      ) : filteredUnassignedCustomers.map((cust, index) => (
+                        <tr key={cust.customer_number || cust.customer_id || index} className="hover:bg-amber-50/40 transition-colors border-b border-slate-100 last:border-0 group">
+                          <td className="px-5 py-6 text-xs font-bold text-slate-400">{index + 1}</td>
+                          <td className="px-5 py-6 font-black text-sm text-amber-700 font-mono">
+                            {cust.customer_number || cust.customer_id}
+                          </td>
+                          <td className="px-5 py-6 font-black text-sm text-slate-900 uppercase tracking-tight">
+                            {cust.first_name} {cust.surname}
+                          </td>
+                          <td className="px-5 py-6 font-bold text-sm text-slate-600">
+                            {cust.customer_type_name || 'Regular Customer'}
+                          </td>
+                          <td className="px-5 py-6 font-bold text-sm text-slate-600">
+                            {cust.phone_number || 'N/A'}
+                          </td>
+                          <td className="px-5 py-6 font-bold text-sm text-slate-500">
+                            {cust.registration_date ? new Date(cust.registration_date).toLocaleDateString('en-GB') : 'N/A'}
+                          </td>
+                          <td className="px-5 py-6 text-right">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAccountForCustomer(cust)}
+                              className="inline-flex items-center space-x-1.5 px-4 py-2 bg-[#00c58d] hover:bg-[#00ad7c] text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-95"
+                              title="Open account for this customer"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Open Account</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {filteredUnassignedCustomers.length === 0 && !loading && (
+                    <div className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-sm">
+                      {searchTerm ? 'No unassigned customers match your search.' : 'All registered customers currently have assigned accounts.'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
