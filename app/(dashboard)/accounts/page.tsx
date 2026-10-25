@@ -78,6 +78,11 @@ export default function AccountsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [manageFilter, setManageFilter] = useState<'all' | 'unassigned'>('all');
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [displayLimit, setDisplayLimit] = useState(20);
+
+  useEffect(() => {
+    setDisplayLimit(20);
+  }, [searchTerm, manageFilter]);
 
   // Generated Account Number
   const [generatedAccountNumber, setGeneratedAccountNumber] = useState('');
@@ -707,7 +712,7 @@ export default function AccountsPage() {
                             <td colSpan={8} className="px-4 py-10"><div className="h-4 bg-slate-100 rounded w-full"></div></td>
                           </tr>
                         ))
-                      ) : filteredAccounts.map((account, index) => (
+                      ) : filteredAccounts.slice(0, displayLimit).map((account, index) => (
                         <tr key={account.account_number} className="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 group">
                           <td className="px-5 py-6 text-xs font-bold text-slate-400">{index + 1}</td>
                           <td className="px-5 py-6 font-black text-sm text-slate-900 group-hover:text-blue-600 transition-colors underline decoration-blue-500/30 font-mono">
@@ -768,6 +773,21 @@ export default function AccountsPage() {
                       {searchTerm ? 'No accounts found matching your search.' : 'No accounts found.'}
                     </div>
                   )}
+                  {filteredAccounts.length > displayLimit && (
+                    <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 px-6">
+                      <span className="text-xs font-bold text-slate-500">
+                        Showing <strong className="text-slate-900">{Math.min(displayLimit, filteredAccounts.length)}</strong> of <strong className="text-slate-900">{filteredAccounts.length}</strong> accounts
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setDisplayLimit((prev) => prev + 20)}
+                        className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center space-x-2"
+                      >
+                        <span>Load More (+20)</span>
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -795,7 +815,7 @@ export default function AccountsPage() {
                             <td colSpan={7} className="px-4 py-10"><div className="h-4 bg-slate-100 rounded w-full"></div></td>
                           </tr>
                         ))
-                      ) : filteredUnassignedCustomers.map((cust, index) => (
+                      ) : filteredUnassignedCustomers.slice(0, displayLimit).map((cust, index) => (
                         <tr key={cust.customer_number || cust.customer_id || index} className="hover:bg-amber-50/40 transition-colors border-b border-slate-100 last:border-0 group">
                           <td className="px-5 py-6 text-xs font-bold text-slate-400">{index + 1}</td>
                           <td className="px-5 py-6 font-black text-sm text-amber-700 font-mono">
@@ -831,6 +851,21 @@ export default function AccountsPage() {
                   {filteredUnassignedCustomers.length === 0 && !loading && (
                     <div className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-sm">
                       {searchTerm ? 'No unassigned customers match your search.' : 'All registered customers currently have assigned accounts.'}
+                    </div>
+                  )}
+                  {filteredUnassignedCustomers.length > displayLimit && (
+                    <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 px-6">
+                      <span className="text-xs font-bold text-slate-500">
+                        Showing <strong className="text-slate-900">{Math.min(displayLimit, filteredUnassignedCustomers.length)}</strong> of <strong className="text-slate-900">{filteredUnassignedCustomers.length}</strong> unassigned customers
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setDisplayLimit((prev) => prev + 20)}
+                        className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center space-x-2"
+                      >
+                        <span>Load More (+20)</span>
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
                     </div>
                   )}
                 </div>

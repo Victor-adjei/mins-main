@@ -13,7 +13,8 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  X
+  X,
+  ChevronDown
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -120,6 +121,11 @@ export default function CustomersPage() {
   const [success, setSuccess] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [displayLimit, setDisplayLimit] = useState(20);
+
+  useEffect(() => {
+    setDisplayLimit(20);
+  }, [searchTerm]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const phoneInputRef = useRef<HTMLInputElement>(null);
@@ -789,7 +795,7 @@ export default function CustomersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filteredCustomers.map((c) => (
+                  {filteredCustomers.slice(0, displayLimit).map((c) => (
                     <tr key={c.customer_number} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 text-sm font-bold text-gray-700">{c.customer_number}</td>
                       <td className="px-4 py-3">
@@ -836,6 +842,21 @@ export default function CustomersPage() {
               {filteredCustomers.length === 0 && (
                 <div className="py-20 text-center text-gray-400">
                   <p>No customers found.</p>
+                </div>
+              )}
+              {filteredCustomers.length > displayLimit && (
+                <div className="p-4 bg-slate-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 px-6">
+                  <span className="text-xs font-bold text-gray-500">
+                    Showing <strong className="text-gray-900">{Math.min(displayLimit, filteredCustomers.length)}</strong> of <strong className="text-gray-900">{filteredCustomers.length}</strong> customers
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setDisplayLimit((prev) => prev + 20)}
+                    className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center space-x-2"
+                  >
+                    <span>Load More (+20)</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
                 </div>
               )}
             </div>
