@@ -1,7 +1,9 @@
 const BASE_URL = process.env.SASUSYNC_BASE_URL || "https://sms.sasusync.com";
 const API_KEY = process.env.SASUSYNC_API_KEY;
 
-const RETRY_STATUSES = new Set([429, 500, 502, 503, 504]);
+// Only retry on rate-limiting (429) where the gateway has NOT processed the message.
+// Retrying on 500/502/504 or network abort causes duplicate SMS dispatches.
+const RETRY_STATUSES = new Set([429]);
 
 export class SasuSyncError extends Error {
   status: number;
@@ -13,9 +15,31 @@ export class SasuSyncError extends Error {
   }
 }
 
+/**
+ * Transliterates Akan/Unicode characters and special punctuation to GSM-7 compatible equivalents.
+ * Prevents SMS from switching to UCS-2 encoding (which drops the single-message limit from 160 to 70 chars).
+ */
+export function sanitizeToGsm7(text: string): string {
+  if (!text) return '';
+  return text
+    // Akan / Ghanaian characters
+    .replace(/[Ɛɛ]/g, (m) => (m === 'Ɛ' ? 'E' : 'e'))
+    .replace(/[Ɔɔ]/g, (m) => (m === 'Ɔ' ? 'O' : 'o'))
+    // Curly quotes and apostrophes
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    // Dashes
+    .replace(/[\u2013\u2014]/g, '-')
+    // Non-breaking spaces and special whitespaces
+    .replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, ' ')
+    // Decompose and strip diacritics / accents
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function request(method: string, path: string, payload?: any, attempts = 4) {
+async function request(method: string, path: string, payload?: any, attempts = 1) {
   for (let attempt = 0; attempt < attempts; attempt++) {
     let res;
     try {
@@ -50,7 +74,9 @@ async function request(method: string, path: string, payload?: any, attempts = 4
 }
 
 export function sendSms(sender: string, recipients: string | string[], message: string, options?: { sandbox?: boolean }) {
+  const cleanSender = sanitizeToGsm7(sender || 'EYE ADOM').slice(0, 11).trim() || 'EYE ADOM';
+  const cleanMessage = sanitizeToGsm7(message);
   const list = Array.isArray(recipients) ? recipients : [recipients];
   const path = options?.sandbox ? "/smssandbox/v1/send" : "/api/v1/send";
-  return request("POST", path, { sender, recipients: list, message });
+  return request("POST", path, { sender: cleanSender, recipients: list, message: cleanMessage }, 1);
 }

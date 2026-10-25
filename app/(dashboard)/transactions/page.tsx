@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   ArrowUpRight,
   ArrowDownLeft,
@@ -37,6 +37,7 @@ export default function TransactionsPage() {
   const [type, setType] = useState<'Deposit' | 'Withdrawal'>('Deposit');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [fetchingRecent, setFetchingRecent] = useState(false);
@@ -142,8 +143,15 @@ export default function TransactionsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingRef.current || loading) return;
+
+    isSubmittingRef.current = true;
     setLoading(true);
     setMessage(null);
+
+    const idempotencyKey = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${accountNumber}-${Date.now()}-${Math.random()}`;
 
     try {
       const res = await fetch('/api/transactions', {
@@ -153,7 +161,8 @@ export default function TransactionsPage() {
           account_number: accountNumber,
           transaction_type: type,
           amount: parseFloat(amount),
-          description
+          description,
+          idempotency_key: idempotencyKey
         }),
       });
 
@@ -173,6 +182,7 @@ export default function TransactionsPage() {
       setMessage({ type: 'error', text: 'An unexpected error occurred' });
     } finally {
       setLoading(false);
+      isSubmittingRef.current = false;
     }
   };
 
