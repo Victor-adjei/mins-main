@@ -151,15 +151,19 @@ export const POST = auth(async (req) => {
     // 6. Send SMS Notification asynchronously (GSM-7 clean — single 160-char SMS, no splitting)
     const { phone_number, first_name } = accountRes.rows[0];
     if (phone_number) {
-      const senderId = process.env.SASUSYNC_SENDER_ID || 'EYE ADOM';
+      const senderId = process.env.SASUSYNC_SENDER_ID || 'ƐYƐ ADOM';
       const action = transaction_type === 'Deposit' ? 'deposited into' : 'withdrawn from';
       const formattedAmount = Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const formattedBalance = Number(newBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      const smsMessage = `EYE ADOM: Hello ${first_name || 'Customer'}, GHS ${formattedAmount} has been ${action} your account ${account_number}. Current Balance: GHS ${formattedBalance}.`;
+      const smsMessage = `ƐYƐ ADOM: Hello ${first_name || 'Customer'}, GHS ${formattedAmount} has been ${action} your account ${account_number}. Current Balance: GHS ${formattedBalance}.`;
       
-      sendSms(senderId, phone_number, smsMessage).catch(err => {
-        console.error('SMS sending failed:', err);
-      });
+      sendSms(senderId, phone_number, smsMessage)
+        .then((res) => {
+          console.log(`[SMS SUCCESS] Dispatched transaction alert to ${phone_number}:`, res?.data?.task_id || res);
+        })
+        .catch((err) => {
+          console.error(`[SMS ERROR] Failed to send alert to ${phone_number}:`, err);
+        });
     }
 
     const responsePayload = {

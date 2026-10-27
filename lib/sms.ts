@@ -40,13 +40,15 @@ export function sanitizeToGsm7(text: string): string {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function request(method: string, path: string, payload?: any, attempts = 1) {
+  const baseUrl = process.env.SASUSYNC_BASE_URL || "https://sms.sasusync.com";
+  const apiKey = process.env.SASUSYNC_API_KEY;
   for (let attempt = 0; attempt < attempts; attempt++) {
     let res;
     try {
-      res = await fetch(`${BASE_URL}${path}`, {
+      res = await fetch(`${baseUrl}${path}`, {
         method,
         headers: { 
-          "X-API-Key": API_KEY || "", 
+          "X-API-Key": apiKey || "", 
           "Content-Type": "application/json" 
         },
         body: payload ? JSON.stringify(payload) : undefined,
@@ -74,9 +76,14 @@ async function request(method: string, path: string, payload?: any, attempts = 1
 }
 
 export function sendSms(sender: string, recipients: string | string[], message: string, options?: { sandbox?: boolean }) {
-  const cleanSender = sanitizeToGsm7(sender || 'EYE ADOM').slice(0, 11).trim() || 'EYE ADOM';
+  // Use approved sender ID without GSM-7 transliteration (Sender ID must strictly match approved ID e.g. "ƐYƐ ADOM")
+  const fallbackSender = process.env.SASUSYNC_SENDER_ID || 'ƐYƐ ADOM';
+  const cleanSender = (sender || fallbackSender).trim().slice(0, 11) || 'ƐYƐ ADOM';
   const cleanMessage = sanitizeToGsm7(message);
-  const list = Array.isArray(recipients) ? recipients : [recipients];
+  const list = (Array.isArray(recipients) ? recipients : [recipients])
+    .map((r) => String(r || '').trim())
+    .filter(Boolean);
   const path = options?.sandbox ? "/smssandbox/v1/send" : "/api/v1/send";
   return request("POST", path, { sender: cleanSender, recipients: list, message: cleanMessage }, 1);
 }
+
