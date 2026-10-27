@@ -16,15 +16,12 @@ export class SasuSyncError extends Error {
 }
 
 /**
- * Transliterates Akan/Unicode characters and special punctuation to GSM-7 compatible equivalents.
- * Prevents SMS from switching to UCS-2 encoding (which drops the single-message limit from 160 to 70 chars).
+ * Sanitizes message text by normalizing curly quotes, dashes, and whitespace,
+ * while preserving Akan characters (Ɛ, ɛ, Ɔ, ɔ) as requested.
  */
 export function sanitizeToGsm7(text: string): string {
   if (!text) return '';
   return text
-    // Akan / Ghanaian characters
-    .replace(/[Ɛɛ]/g, (m) => (m === 'Ɛ' ? 'E' : 'e'))
-    .replace(/[Ɔɔ]/g, (m) => (m === 'Ɔ' ? 'O' : 'o'))
     // Curly quotes and apostrophes
     .replace(/[\u2018\u2019]/g, "'")
     .replace(/[\u201C\u201D]/g, '"')
@@ -32,7 +29,7 @@ export function sanitizeToGsm7(text: string): string {
     .replace(/[\u2013\u2014]/g, '-')
     // Non-breaking spaces and special whitespaces
     .replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, ' ')
-    // Decompose and strip diacritics / accents
+    // Decompose and strip combining diacritics / accents
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 }
