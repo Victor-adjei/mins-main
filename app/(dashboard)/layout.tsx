@@ -2,6 +2,7 @@ import Sidebar from '@/components/Sidebar';
 import Navbar from '@/components/Navbar';
 import { SessionProvider } from 'next-auth/react';
 import { SidebarProvider } from '@/context/SidebarContext';
+import SessionGuard from '@/components/SessionGuard';
 
 export default function DashboardLayout({
   children,
@@ -11,6 +12,7 @@ export default function DashboardLayout({
   return (
     <SessionProvider>
       <SidebarProvider>
+        <SessionGuard />
         <div className="flex min-h-screen bg-slate-50 overflow-hidden">
           <Sidebar />
           <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">

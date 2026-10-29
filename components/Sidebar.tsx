@@ -19,7 +19,8 @@ import {
   X,
   Menu
 } from 'lucide-react';
-import { signOut, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import { logoutAction } from '@/lib/actions';
 import { useSidebar } from '@/context/SidebarContext';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -174,7 +175,7 @@ export default function Sidebar() {
             </div>
           </div>
           <button 
-            onClick={() => signOut({ redirectTo: '/login' })}
+            onClick={() => logoutAction()}
             className="w-full flex items-center justify-center space-x-3 px-4 py-3.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all duration-300 font-black text-[10px] uppercase tracking-widest shadow-lg shadow-red-500/5 group"
           >
             <LogOut className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />

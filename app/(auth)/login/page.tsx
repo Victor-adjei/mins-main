@@ -1,21 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 
-export default function LoginPage() {
+function LoginForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('reason') === 'expired') {
+      setSessionExpired(true);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSessionExpired(false);
 
     try {
       const result = await signIn('credentials', {
@@ -57,8 +66,16 @@ export default function LoginPage() {
             <h1 className="text-3xl font-black text-[#0b1424] leading-tight tracking-tighter uppercase">
               ƐYƐ ADOM
             </h1>
-            <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[10px] mt-1">SUSU & SAVINGS</p>
+            <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[10px] mt-1">SUSU &amp; SAVINGS</p>
           </div>
+
+          {/* Session expired banner */}
+          {sessionExpired && (
+            <div className="bg-amber-50 text-amber-800 p-4 rounded-2xl text-xs font-black uppercase tracking-tight border border-amber-200 flex items-start shadow-sm mb-6">
+              <span className="w-2 h-2 bg-amber-500 rounded-full mr-3 mt-0.5 flex-shrink-0 animate-pulse" />
+              <span>Your session has expired due to inactivity. Please log in again to continue.</span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {error && (
@@ -102,7 +119,7 @@ export default function LoginPage() {
                 <div className="relative flex items-center">
                   <input type="checkbox" className="peer w-5 h-5 rounded-lg border-2 border-slate-300 text-[#0066cc] focus:ring-0 checked:bg-[#0066cc] cursor-pointer appearance-none transition-all" />
                   <div className="absolute inset-0 flex items-center justify-center text-white opacity-0 peer-checked:opacity-100 pointer-events-none">
-                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                   </div>
                 </div>
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-slate-900 transition-colors">Stay logged in</span>
@@ -126,7 +143,7 @@ export default function LoginPage() {
                 <>
                   <span>AUTHENTICATE</span>
                   <div className="w-5 h-5 bg-white/10 rounded-lg flex items-center justify-center">
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
                   </div>
                 </>
               )}
@@ -141,5 +158,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

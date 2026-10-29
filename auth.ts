@@ -2,7 +2,7 @@ import NextAuth, { DefaultSession } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { query } from '@/lib/db';
 import bcrypt from 'bcryptjs';
-import { authConfig } from './auth.config';
+import { authConfig, SESSION_MAX_AGE } from './auth.config';
 
 declare module 'next-auth' {
   interface Session {
@@ -26,7 +26,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) return null;
-        
+
         const res = await query(
           'SELECT * FROM users WHERE username = $1 LIMIT 1',
           [credentials.username]
@@ -53,5 +53,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  session: { strategy: 'jwt' },
+  session: { strategy: 'jwt', maxAge: SESSION_MAX_AGE },
 });
