@@ -2,38 +2,40 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 /**
- * Enhanced Edge-safe proxy for authentication checks.
- * Detects multiple session cookie formats used by Auth.js (NextAuth v5).
+ * Auth-aware Proxy (Next.js 16 equivalent of middleware.ts).
+ *
+ * Performs an optimistic cookie-presence check before rendering pages:
+ *  • Unauthenticated users hitting any protected route → /login?reason=expired
+ *  • Authenticated users hitting /login → /
+ *
+ * Auth.js (NextAuth v5) sets one of the cookie names below depending on
+ * whether the app is served over HTTP (dev) or HTTPS (prod).
  */
+
+const SESSION_COOKIE_NAMES = [
+  "authjs.session-token",
+  "__Secure-authjs.session-token",
+  "next-auth.session-token",
+  "__Secure-next-auth.session-token",
+];
+
 export function proxy(request: NextRequest) {
   const url = request.nextUrl.clone();
-  
-  // List of possible session cookie names in Auth.js v5
-  const sessionCookieNames = [
-    "authjs.session-token",
-    "__Secure-authjs.session-token",
-    "next-auth.session-token",
-    "__Secure-next-auth.session-token"
-  ];
-
-  const sessionToken = sessionCookieNames.find(name => request.cookies.has(name));
   const isLoginPage = url.pathname.startsWith("/login");
 
-  // Log detected session for debugging (visible in server terminal)
-  if (sessionToken) {
-    console.log(`[Proxy] Session detected via ${sessionToken} for ${url.pathname}`);
-  } else {
-    // Optional: console.log(`[Proxy] No session for ${url.pathname}`);
-  }
+  const hasSession = SESSION_COOKIE_NAMES.some((name) =>
+    request.cookies.has(name)
+  );
 
-  if (!sessionToken && !isLoginPage) {
+  // Unauthenticated → redirect to login
+  if (!hasSession && !isLoginPage) {
     const loginUrl = new URL("/login", request.url);
-    // Preserving the original destination for redirect back after login
-    // loginUrl.searchParams.set("callbackUrl", request.url); 
+    loginUrl.searchParams.set("reason", "expired");
     return NextResponse.redirect(loginUrl);
   }
 
-  if (sessionToken && isLoginPage) {
+  // Already logged in → redirect away from login page
+  if (hasSession && isLoginPage) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
@@ -41,7 +43,16 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.png$).*)"],
+  matcher: [
+    /*
+     * Match all paths EXCEPT:
+     *  - _next/static  (static assets)
+     *  - _next/image   (image optimisation)
+     *  - favicon.ico, logo.png and other public images
+     *  - /api/auth     (NextAuth internals — must NOT be blocked)
+     */
+    "/((?!_next/static|_next/image|favicon.ico|logo.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp)|api/auth).*)",
+  ],
 };
 
 export default proxy;
