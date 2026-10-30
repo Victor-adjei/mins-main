@@ -52,16 +52,16 @@ function LoginForm() {
         <div className="p-10">
           <div className="flex justify-center mb-8">
             <div className="relative w-24 h-24">
-              <Image 
-                src="/logo.png" 
-                alt="Ɛyɛ Adom Logo" 
-                fill 
+              <Image
+                src="/logo.png"
+                alt="Ɛyɛ Adom Logo"
+                fill
                 className="object-contain"
                 priority
               />
             </div>
           </div>
-          
+
           <div className="text-center mb-10">
             <h1 className="text-3xl font-black text-[#0b1424] leading-tight tracking-tighter uppercase">
               ƐYƐ ADOM
@@ -73,7 +73,7 @@ function LoginForm() {
           {sessionExpired && (
             <div className="bg-amber-50 text-amber-800 p-4 rounded-2xl text-xs font-black uppercase tracking-tight border border-amber-200 flex items-start shadow-sm mb-6">
               <span className="w-2 h-2 bg-amber-500 rounded-full mr-3 mt-0.5 flex-shrink-0 animate-pulse" />
-              <span>Your session has expired due to inactivity. Please log in again to continue.</span>
+
             </div>
           )}
 
@@ -84,7 +84,7 @@ function LoginForm() {
                 {error}
               </div>
             )}
-            
+
             <div className="space-y-2">
               <label className="block text-[10px] font-black text-slate-900 uppercase tracking-widest pl-1">
                 Username Identifier
@@ -119,7 +119,7 @@ function LoginForm() {
                 <div className="relative flex items-center">
                   <input type="checkbox" className="peer w-5 h-5 rounded-lg border-2 border-slate-300 text-[#0066cc] focus:ring-0 checked:bg-[#0066cc] cursor-pointer appearance-none transition-all" />
                   <div className="absolute inset-0 flex items-center justify-center text-white opacity-0 peer-checked:opacity-100 pointer-events-none">
-                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                   </div>
                 </div>
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-slate-900 transition-colors">Stay logged in</span>
@@ -150,11 +150,11 @@ function LoginForm() {
             </button>
           </form>
         </div>
-        
+
         <div className="bg-slate-50 py-6 text-center border-t border-slate-100">
-           <button className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] hover:text-[#0b1424] transition-colors">
-             &copy; 2026 ƐYƐ ADOM MIMS
-           </button>
+          <button className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] hover:text-[#0b1424] transition-colors">
+            &copy; 2026 ƐYƐ ADOM MIMS
+          </button>
         </div>
       </div>
     </div>

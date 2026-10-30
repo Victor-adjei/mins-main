@@ -60,12 +60,12 @@ function setCachedResponse(key: string, response: any): void {
 
 export const POST = auth(async (req) => {
   if (!req.auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  
+
   const client = await pool.connect();
-  
+
   try {
     const { account_number, transaction_type, amount, description, idempotency_key } = await req.json();
-    
+
     if (amount <= 0) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
     }
@@ -125,7 +125,7 @@ export const POST = auth(async (req) => {
       if (req.auth.user.role === 'Field Officer') {
         throw new Error('Access Denied: Field Officers are restricted to Deposits only.');
       }
-      
+
       if (currentBalance < amount) {
         throw new Error('Insufficient balance');
       }
@@ -156,7 +156,7 @@ export const POST = auth(async (req) => {
       const formattedAmount = Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const formattedBalance = Number(newBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const smsMessage = `ƐYƐ ADOM: Hello ${first_name || 'Customer'}, GHS ${formattedAmount} has been ${action} your account ${account_number}. Current Balance: GHS ${formattedBalance}.`;
-      
+
       sendSms(senderId, phone_number, smsMessage)
         .then((res) => {
           console.log(`[SMS SUCCESS] Dispatched transaction alert to ${phone_number}:`, res?.data?.task_id || res);
@@ -186,3 +186,4 @@ export const POST = auth(async (req) => {
     client.release();
   }
 });
+
