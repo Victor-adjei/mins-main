@@ -356,13 +356,23 @@ export default function TransactionsPage() {
                     <div className="relative z-10">
                       {selectedAccountDetails.passport_photo ? (
                         <div className="flex justify-center mb-6">
-                          <div className="relative w-32 h-32 rounded-3xl overflow-hidden border-4 border-slate-800 shadow-2xl">
+                          <div className="relative w-32 h-32 rounded-3xl overflow-hidden border-4 border-slate-800 shadow-2xl flex items-center justify-center bg-slate-800">
                             <img 
                               src={selectedAccountDetails.passport_photo} 
                               alt="Member Photo"
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                const fallback = document.getElementById('txn-photo-fallback');
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
                             />
-                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-3xl"></div>
+                            <div id="txn-photo-fallback" style={{ display: 'none' }} className="w-full h-full items-center justify-center">
+                              <span className="text-emerald-400 text-2xl font-black uppercase">
+                                {(selectedAccountDetails.first_name?.[0] || '') + (selectedAccountDetails.surname?.[0] || '')}
+                              </span>
+                            </div>
+                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-3xl pointer-events-none"></div>
                           </div>
                         </div>
                       ) : (

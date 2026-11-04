@@ -47,9 +47,14 @@ interface CustomerType {
   customer_type_name: string;
 }
 
-async function processAndCompressImage(file: File): Promise<File> {
+async function processAndCompressImage(file: File): Promise<string> {
   if (!file.type.startsWith('image/')) {
-    return file;
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
   }
 
   return new Promise((resolve) => {
@@ -57,7 +62,8 @@ async function processAndCompressImage(file: File): Promise<File> {
     reader.onload = (event) => {
       const img = new window.Image();
       img.onload = () => {
-        const MAX_DIMENSION = 1200;
+        // Optimal size for passport photos (<35KB Base64 data)
+        const MAX_DIMENSION = 400;
         let { width, height } = img;
 
         if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
@@ -76,35 +82,22 @@ async function processAndCompressImage(file: File): Promise<File> {
         const ctx = canvas.getContext('2d');
 
         if (!ctx) {
-          resolve(file);
+          resolve((event.target?.result as string) || '');
           return;
         }
 
         ctx.drawImage(img, 0, 0, width, height);
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              resolve(file);
-              return;
-            }
-            const cleanName = (file.name || 'photo.jpg').replace(/\.[^/.]+$/, '') + '.jpg';
-            const compressedFile = new File([blob], cleanName, {
-              type: 'image/jpeg',
-              lastModified: Date.now(),
-            });
-            resolve(compressedFile);
-          },
-          'image/jpeg',
-          0.85
-        );
+        // Base64 JPEG stored directly in database (no external storage dependency)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        resolve(dataUrl);
       };
       img.onerror = () => {
-        resolve(file);
+        resolve((event.target?.result as string) || '');
       };
       img.src = event.target?.result as string;
     };
     reader.onerror = () => {
-      resolve(file);
+      resolve('');
     };
     reader.readAsDataURL(file);
   });
@@ -205,29 +198,19 @@ export default function CustomersPage() {
     setUploadingPhoto(true);
     setError(null);
     try {
-      // Process and compress image client-side to ensure fast mobile uploads (<250KB) and JPEG compatibility
-      const compressedFile = await processAndCompressImage(file);
+      // Process and compress image client-side to passport Base64 (<35KB)
+      // Stored directly in the database without external Supabase Storage
+      const base64DataUrl = await processAndCompressImage(file);
       
-      const localUrl = URL.createObjectURL(compressedFile);
-      setPreviewUrl(localUrl);
-
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', compressedFile);
-
-      const res = await fetch('/api/upload', { method: 'POST', body: uploadFormData });
-      const data = await res.json();
-
-      if (res.ok && data.url) {
-        setFormData(prev => ({ ...prev, passport_photo: data.url }));
-        setPreviewUrl(data.url);
+      if (base64DataUrl) {
+        setFormData(prev => ({ ...prev, passport_photo: base64DataUrl }));
+        setPreviewUrl(base64DataUrl);
       } else {
-        setError(data.error || 'Failed to upload photo to storage.');
-        setPreviewUrl(editingCustomer?.passport_photo || null);
-        setFormData(prev => ({ ...prev, passport_photo: editingCustomer?.passport_photo || '' }));
+        setError('Failed to process image file.');
       }
     } catch (err: any) {
-      console.error('Upload error:', err);
-      setError(err?.message || 'Network error during photo upload.');
+      console.error('Photo processing error:', err);
+      setError(err?.message || 'Error processing photo.');
       setPreviewUrl(editingCustomer?.passport_photo || null);
       setFormData(prev => ({ ...prev, passport_photo: editingCustomer?.passport_photo || '' }));
     } finally {
@@ -687,7 +670,7 @@ export default function CustomersPage() {
                     className="w-32 h-32 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors bg-gray-50 overflow-hidden relative rounded-lg select-none"
                   >
                     {previewUrl ? (
-                      <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                      <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" onError={() => setPreviewUrl(null)} />
                     ) : (
                       <>
                         <Plus className="w-8 h-8 text-gray-400" />
@@ -801,7 +784,7 @@ export default function CustomersPage() {
                       <td className="px-4 py-3">
                         <div className="w-10 h-10 rounded-full border-2 border-slate-200 bg-slate-100 flex-shrink-0 relative overflow-hidden shadow-sm flex items-center justify-center">
                           {c.passport_photo ? (
-                            <img src={c.passport_photo} alt="" className="w-full h-full object-cover" />
+                            <img src={c.passport_photo} alt="" className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                           ) : (
                             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                               {(c.first_name?.[0] || '') + (c.surname?.[0] || '')}

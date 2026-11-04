@@ -73,6 +73,7 @@ function LoginForm() {
           {sessionExpired && (
             <div className="bg-amber-50 text-amber-800 p-4 rounded-2xl text-xs font-black uppercase tracking-tight border border-amber-200 flex items-start shadow-sm mb-6">
               <span className="w-2 h-2 bg-amber-500 rounded-full mr-3 mt-0.5 flex-shrink-0 animate-pulse" />
+              <span>Your session has expired. </span>
 
             </div>
           )}
